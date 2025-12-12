@@ -1,0 +1,298 @@
+"""
+用户认证应用视图
+"""
+
+from rest_framework import status, generics
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from django.db.models import Q
+
+from .models import User
+from .serializers import (
+    UserSerializer, UserLoginSerializer, 
+    UserProfileSerializer, UserListSerializer
+)
+
+
+class UserRegisterView(generics.CreateAPIView):
+    """用户注册视图"""
+    
+    serializer_class = UserSerializer
+    permission_classes = []
+    
+    def create(self, request, *args, **kwargs):
+        """处理用户注册请求"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # 生成JWT令牌
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            "success": True,
+            "message": "注册成功",
+            "data": {
+                "user": UserProfileSerializer(user).data,
+                "token": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token)
+                }
+            }
+        }, status=status.HTTP_201_CREATED)
+
+
+class UserLoginView(generics.GenericAPIView):
+    """用户登录视图"""
+    
+    serializer_class = UserLoginSerializer
+    permission_classes = []
+    
+    def post(self, request, *args, **kwargs):
+        """处理用户登录请求"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # 验证用户身份
+        user = authenticate(
+            username=serializer.validated_data['email'],
+            password=serializer.validated_data['password']
+        )
+        
+        if not user:
+            return Response({
+                "success": False,
+                "message": "邮箱或密码错误",
+                "error": {
+                    "code": 401,
+                    "details": "邮箱或密码错误"
+                }
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # 检查用户状态
+        if user.status != User.Status.ACTIVE:
+            return Response({
+                "success": False,
+                "message": "账号已被封禁",
+                "error": {
+                    "code": 403,
+                    "details": "账号已被封禁"
+                }
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # 生成JWT令牌
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            "success": True,
+            "message": "登录成功",
+            "data": {
+                "user": UserProfileSerializer(user).data,
+                "token": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token)
+                }
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    """用户个人资料视图"""
+    
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self):
+        """获取当前登录用户"""
+        return self.request.user
+    
+    def retrieve(self, request, *args, **kwargs):
+        """获取用户资料"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "获取成功",
+            "data": serializer.data
+        })
+    
+    def update(self, request, *args, **kwargs):
+        """更新用户资料"""
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, 
+            data=request.data, 
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            "success": True,
+            "message": "更新成功",
+            "data": serializer.data
+        })
+
+
+class UserDetailView(generics.RetrieveAPIView):
+    """获取指定用户信息视图"""
+    
+    serializer_class = UserProfileSerializer
+    permission_classes = []
+    queryset = User.objects.all()
+    lookup_field = 'id'
+    
+    def retrieve(self, request, *args, **kwargs):
+        """获取用户信息"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "获取成功",
+            "data": serializer.data
+        })
+
+
+class UserListView(generics.ListAPIView):
+    """用户列表视图（管理员）"""
+    
+    serializer_class = UserListSerializer
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    
+    def get_queryset(self):
+        """获取过滤后的用户列表"""
+        queryset = super().get_queryset()
+        
+        # 搜索关键词
+        keyword = self.request.query_params.get('keyword', None)
+        if keyword:
+            queryset = queryset.filter(
+                Q(username__icontains=keyword) | 
+                Q(email__icontains=keyword)
+            )
+        
+        # 角色筛选
+        role = self.request.query_params.get('role', None)
+        if role:
+            queryset = queryset.filter(role=role)
+        
+        # 状态筛选
+        status = self.request.query_params.get('status', None)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        return queryset
+    
+    def list(self, request, *args, **kwargs):
+        """获取用户列表"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({
+                "success": True,
+                "message": "获取成功",
+                "data": {
+                    "users": serializer.data,
+                    "pagination": {
+                        "currentPage": self.request.query_params.get('page', 1),
+                        "totalPages": self.paginator.num_pages,
+                        "totalItems": self.paginator.count,
+                        "pageSize": self.paginator.per_page
+                    }
+                }
+            })
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "success": True,
+            "message": "获取成功",
+            "data": {
+                "users": serializer.data,
+                "pagination": {
+                    "currentPage": 1,
+                    "totalPages": 1,
+                    "totalItems": len(serializer.data),
+                    "pageSize": len(serializer.data)
+                }
+            }
+        })
+
+
+class UserRoleUpdateView(generics.UpdateAPIView):
+    """更新用户角色视图（管理员）"""
+    
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    lookup_field = 'id'
+    
+    def update(self, request, *args, **kwargs):
+        """更新用户角色"""
+        instance = self.get_object()
+        
+        # 只允许更新角色
+        if 'role' not in request.data:
+            return Response({
+                "success": False,
+                "message": "请提供角色信息",
+                "error": {
+                    "code": 400,
+                    "details": "请提供角色信息"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = self.get_serializer(
+            instance, 
+            data={'role': request.data['role']}, 
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            "success": True,
+            "message": "角色更新成功",
+            "data": serializer.data
+        })
+
+
+class UserStatusUpdateView(generics.UpdateAPIView):
+    """更新用户状态视图（管理员）"""
+    
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    lookup_field = 'id'
+    
+    def update(self, request, *args, **kwargs):
+        """更新用户状态"""
+        instance = self.get_object()
+        
+        # 只允许更新状态
+        if 'status' not in request.data:
+            return Response({
+                "success": False,
+                "message": "请提供状态信息",
+                "error": {
+                    "code": 400,
+                    "details": "请提供状态信息"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = self.get_serializer(
+            instance, 
+            data={'status': request.data['status']}, 
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            "success": True,
+            "message": "状态更新成功",
+            "data": serializer.data
+        })

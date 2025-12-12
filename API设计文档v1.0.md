@@ -6,15 +6,17 @@
 - 采用RESTful API设计风格
 - 统一的API前缀：`/api`
 - 统一的响应格式
-- 基于JWT的认证机制
+- 基于Django Auth + JWT的认证机制
 - 清晰的资源层级结构
 - 适当的错误处理
+- 使用Django REST Framework实现
 
 ### 1.2 认证方式
-- 使用JSON Web Token (JWT)进行认证
+- 使用Django Auth + JSON Web Token (JWT)进行认证
 - 登录成功后返回JWT令牌
 - 后续请求需要在请求头中添加 `Authorization: Bearer <token>`
 - 令牌有效期：7天
+- 使用djangorestframework-simplejwt库实现JWT认证
 
 ### 1.3 响应格式
 
@@ -905,9 +907,11 @@
 ## 5. API测试
 
 - 使用Postman或Insomnia进行API测试
-- 编写单元测试和集成测试
+- 使用Django REST Framework的测试框架编写单元测试和集成测试
+- 使用pytest作为测试运行器
 - 测试用例覆盖所有API端点
 - 定期进行API性能测试
+- 使用Django REST Framework的Browsable API进行手动测试
 
 ## 6. 文档更新记录
 
@@ -916,6 +920,7 @@
 | 2023-01-01 | v1.0 | 初始版本 | 开发团队 |
 | 2023-01-15 | v1.1 | 添加举报相关API | 开发团队 |
 | 2023-02-01 | v1.2 | 完善管理员API | 开发团队 |
+| 2025-12-12 | v1.3 | 适配Python Django后端实现，更新认证方式和测试说明 | 开发团队 |
 
 ## 7. 附录
 

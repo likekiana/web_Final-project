@@ -68,10 +68,8 @@ api.interceptors.response.use(
       errorMessage = '网络错误，请检查网络连接'
     }
     
-    // 使用Ant Design的message组件显示错误信息
-    if (window && window.message) {
-      window.message.error(errorMessage)
-    }
+    // 打印错误信息到控制台
+    console.error('API Error:', errorMessage)
     
     return Promise.reject(error)
   }
@@ -90,39 +88,39 @@ export const authAPI = {
 // 帖子相关API
 export const postAPI = {
   // 获取帖子列表
-  getPosts: (params) => api.get('/posts', { params }),
+  getPosts: (params) => api.get('/posts/', { params }),
   // 获取帖子详情
-  getPostDetail: (id) => api.get(`/posts/${id}`),
+  getPostDetail: (id) => api.get(`/posts/${id}/`),
   // 创建帖子
-  createPost: (data) => api.post('/posts', data),
+  createPost: (data) => api.post('/posts/', data),
   // 更新帖子
-  updatePost: (id, data) => api.put(`/posts/${id}`, data),
+  updatePost: (id, data) => api.put(`/posts/${id}/`, data),
   // 删除帖子
-  deletePost: (id) => api.delete(`/posts/${id}`),
+  deletePost: (id) => api.delete(`/posts/${id}/`),
   // 点赞帖子
-  likePost: (id) => api.post(`/posts/${id}/like`),
+  likePost: (id) => api.post(`/posts/${id}/like/`),
   // 取消点赞帖子
-  unlikePost: (id) => api.delete(`/posts/${id}/like`)
+  unlikePost: (id) => api.delete(`/posts/${id}/like/`)
 }
 
 // 评论相关API
 export const commentAPI = {
   // 获取评论列表
-  getComments: (postId, params) => api.get(`/posts/${postId}/comments`, { params }),
+  getComments: (postId, params) => api.get(`/posts/${postId}/comments/`, { params }),
   // 创建评论
-  createComment: (postId, data) => api.post(`/posts/${postId}/comments`, data),
+  createComment: (postId, data) => api.post(`/posts/${postId}/comments/create/`, data),
   // 删除评论
-  deleteComment: (postId, commentId) => api.delete(`/posts/${postId}/comments/${commentId}`),
+  deleteComment: (postId, commentId) => api.delete(`/posts/${postId}/comments/${commentId}/`),
   // 点赞评论
-  likeComment: (postId, commentId) => api.post(`/posts/${postId}/comments/${commentId}/like`),
+  likeComment: (postId, commentId) => api.post(`/posts/${postId}/comments/${commentId}/like/`),
   // 取消点赞评论
-  unlikeComment: (postId, commentId) => api.delete(`/posts/${postId}/comments/${commentId}/like`)
+  unlikeComment: (postId, commentId) => api.delete(`/posts/${postId}/comments/${commentId}/like/`)
 }
 
 // 板块相关API
 export const categoryAPI = {
   // 获取板块列表
-  getCategories: () => api.get('/categories')
+  getCategories: () => api.get('/categories/')
 }
 
 // 用户相关API

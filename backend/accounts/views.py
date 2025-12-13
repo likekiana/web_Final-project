@@ -14,6 +14,8 @@ from .serializers import (
     UserSerializer, UserLoginSerializer, 
     UserProfileSerializer, UserListSerializer
 )
+from content.serializers import PostListSerializer
+from content.models import Post
 
 
 class UserRegisterView(generics.CreateAPIView):
@@ -111,7 +113,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def retrieve(self, request, *args, **kwargs):
         """获取用户资料"""
         instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        serializer = self.get_serializer(instance, context={'request': request})
         return Response({
             "success": True,
             "message": "获取成功",
@@ -136,8 +138,8 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         })
 
 
-class UserDetailView(generics.RetrieveAPIView):
-    """获取指定用户信息视图"""
+class UserDetailView(generics.RetrieveUpdateAPIView):
+    """获取和更新指定用户信息视图"""
     
     serializer_class = UserProfileSerializer
     permission_classes = []
@@ -147,10 +149,28 @@ class UserDetailView(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         """获取用户信息"""
         instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        serializer = self.get_serializer(instance, context={'request': request})
         return Response({
             "success": True,
             "message": "获取成功",
+            "data": serializer.data
+        })
+    
+    def update(self, request, *args, **kwargs):
+        """更新用户信息"""
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, 
+            data=request.data, 
+            partial=True,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        return Response({
+            "success": True,
+            "message": "更新成功",
             "data": serializer.data
         })
 
@@ -295,4 +315,54 @@ class UserStatusUpdateView(generics.UpdateAPIView):
             "success": True,
             "message": "状态更新成功",
             "data": serializer.data
+        })
+
+
+class UserPostsView(generics.ListAPIView):
+    """获取指定用户帖子列表视图"""
+    
+    serializer_class = PostListSerializer
+    permission_classes = []
+    
+    def get_queryset(self):
+        """获取指定用户的帖子列表"""
+        user_id = self.kwargs.get('id')
+        return Post.objects.filter(
+            user_id=user_id,
+            status='normal'
+        ).order_by('-is_sticky', '-is_essential', '-created_at')
+    
+    def list(self, request, *args, **kwargs):
+        """获取用户帖子列表"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({
+                "success": True,
+                "message": "获取成功",
+                "data": {
+                    "posts": serializer.data,
+                    "pagination": {
+                        "currentPage": self.request.query_params.get('page', 1),
+                        "totalPages": self.paginator.num_pages,
+                        "totalItems": self.paginator.count,
+                        "pageSize": self.paginator.per_page
+                    }
+                }
+            })
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "success": True,
+            "message": "获取成功",
+            "data": {
+                "posts": serializer.data,
+                "pagination": {
+                    "currentPage": 1,
+                    "totalPages": 1,
+                    "totalItems": len(serializer.data),
+                    "pageSize": len(serializer.data)
+                }
+            }
         })

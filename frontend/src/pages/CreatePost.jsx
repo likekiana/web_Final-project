@@ -7,8 +7,7 @@ import PostForm from '../components/PostForm'
 const CreatePost = () => {
   const navigate = useNavigate()
 
-  const handleSubmit = (values) => {
-    console.log('Post submitted:', values)
+  const handleSubmit = async (values) => {
     // 提交成功后跳转到首页或帖子详情页
     navigate('/')
   }

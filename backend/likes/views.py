@@ -16,24 +16,29 @@ class LikeToggleView(generics.GenericAPIView):
     
     permission_classes = [IsAuthenticated]
     
-    def post(self, request, target_type, target_id):
-        """处理点赞/取消点赞请求"""
-        # 验证目标类型
-        if target_type not in ['post', 'comment']:
-            return Response({
-                "success": False,
-                "message": "无效的目标类型",
-                "error": {
-                    "code": 400,
-                    "details": "目标类型必须是post或comment"
-                }
-            }, status=status.HTTP_400_BAD_REQUEST)
+    def get_target_info(self, id, post_id=None):
+        """获取目标类型和目标对象"""
+        # 确定目标类型和目标ID
+        if post_id is not None:
+            # 评论点赞：/posts/<post_id>/comments/<id>/like
+            target_type = 'comment'
+            target_id = id
+        else:
+            # 帖子点赞：/posts/<id>/like
+            target_type = 'post'
+            target_id = id
         
         # 获取目标对象
         if target_type == 'post':
             target = get_object_or_404(Post, id=target_id)
         else:
             target = get_object_or_404(Comment, id=target_id)
+        
+        return target_type, target_id, target
+    
+    def post(self, request, id, post_id=None):
+        """处理点赞请求"""
+        target_type, target_id, target = self.get_target_info(id, post_id)
         
         # 检查是否已点赞
         like, created = Like.objects.get_or_create(
@@ -52,6 +57,40 @@ class LikeToggleView(generics.GenericAPIView):
         else:
             # 未点赞，添加点赞
             target.increment_likes_count()
+        
+        # 重新获取目标对象，获取最新的点赞数
+        if target_type == 'post':
+            target = get_object_or_404(Post, id=target_id)
+        else:
+            target = get_object_or_404(Comment, id=target_id)
+        
+        return Response({
+            "success": True,
+            "message": "操作成功",
+            "data": {
+                "isLiked": is_liked,
+                "likesCount": target.likes_count
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def delete(self, request, id, post_id=None):
+        """处理取消点赞请求"""
+        target_type, target_id, target = self.get_target_info(id, post_id)
+        
+        # 检查是否已点赞
+        try:
+            like = Like.objects.get(
+                user=request.user,
+                target_type=target_type,
+                target_id=target_id
+            )
+            # 已点赞，取消点赞
+            like.delete()
+            target.decrement_likes_count()
+            is_liked = False
+        except Like.DoesNotExist:
+            # 未点赞，不需要操作
+            is_liked = False
         
         # 重新获取目标对象，获取最新的点赞数
         if target_type == 'post':

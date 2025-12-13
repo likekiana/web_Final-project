@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Form, Input, Button, Card, Typography, message, Row, Col } from 'antd'
 import { LockOutlined, UserOutlined, MailOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
+import { authAPI } from '../services/api'
 
 const { Title } = Typography
 
@@ -9,14 +10,25 @@ const Register = () => {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     setLoading(true)
-    // 模拟注册请求
-    setTimeout(() => {
-      message.success('注册成功，请登录')
+    try {
+      // 删除confirmPassword字段，后端不需要
+      const { confirmPassword, ...registerData } = values
+      const response = await authAPI.register(registerData)
+      if (response.success) {
+        message.success('注册成功，请登录')
+        setLoading(false)
+        navigate('/login')
+      } else {
+        message.error(response.message || '注册失败')
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Register error:', error)
+      message.error('注册失败，请稍后重试')
       setLoading(false)
-      navigate('/login')
-    }, 1500)
+    }
   }
 
   return (

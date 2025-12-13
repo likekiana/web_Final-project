@@ -1,16 +1,73 @@
-import React from 'react'
-import { Card, Typography, Button } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import React, { useState, useEffect } from 'react'
+import { Card, Typography, Button, Avatar, Space, Tag, Spin } from 'antd'
+import { ArrowLeftOutlined, LikeOutlined, CommentOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 
-const { Title, Paragraph } = Typography
+// 导入API服务
+import { postAPI } from '../services/api'
 
-const PostDetail = () => {
+const { Title, Paragraph, Text } = Typography
+
+const PostDetail = ({ postId }) => {
+  const [post, setPost] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // 从API获取帖子详情
+  useEffect(() => {
+    const fetchPostDetail = async () => {
+      if (!postId) return
+      
+      setLoading(true)
+      try {
+        const response = await postAPI.getPostDetail(postId)
+        setPost(response.data)
+        setError(null)
+      } catch (err) {
+        console.error('Failed to fetch post detail:', err)
+        setError('获取帖子详情失败')
+        setPost(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPostDetail()
+  }, [postId])
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px 0' }}>
+        <Spin size="large" />
+        <p style={{ marginTop: 16 }}>加载中...</p>
+      </div>
+    )
+  }
+
+  if (error || !post) {
+    return (
+      <Card style={{ marginBottom: 24 }}>
+        <div style={{ textAlign: 'center', padding: '50px 0' }}>
+          <Text type="danger">{error || '帖子不存在'}</Text>
+          <br />
+          <Button 
+            icon={<ArrowLeftOutlined />} 
+            as={Link} 
+            to="/"
+            style={{ marginTop: 16 }}
+          >
+            返回列表
+          </Button>
+        </div>
+      </Card>
+    )
+  }
+
   return (
     <Card
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title level={3} style={{ margin: 0 }}>如何高效准备期末考试？</Title>
+          <Title level={3} style={{ margin: 0 }}>{post.title}</Title>
           <Button 
             icon={<ArrowLeftOutlined />} 
             as={Link} 
@@ -22,13 +79,46 @@ const PostDetail = () => {
       }
       style={{ marginBottom: 24 }}
     >
+      {/* 帖子元信息 */}
+      <Space style={{ marginBottom: 16 }}>
+        <Tag color="blue">{post.categoryName}</Tag>
+        {post.type === 'trade' && <Tag color="orange">交易</Tag>}
+        {post.type === 'advertisement' && <Tag color="red">广告</Tag>}
+      </Space>
+
+      {/* 帖子内容 */}
       <Paragraph style={{ margin: '24px 0' }}>
-        马上就要期末考试了，大家有什么好的复习方法分享吗？
-        
-        我最近在准备期末考试，感觉时间不够用，有些课程还没有开始复习。希望大家能分享一些高效的复习方法，比如如何制定复习计划，如何高效记忆知识点，如何处理压力等等。
-        
-        谢谢大家！
+        {post.content}
       </Paragraph>
+
+      {/* 帖子作者信息和统计 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+        <Space>
+          <Avatar icon={<UserOutlined />} src={post.avatar} size={40} />
+          <div>
+            <Text strong>{post.username}</Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {new Date(post.createdAt).toLocaleString()}
+            </Text>
+          </div>
+        </Space>
+        
+        <Space size="middle" style={{ marginLeft: 'auto' }}>
+          <Space>
+            <EyeOutlined />
+            <Text type="secondary">{post.viewsCount || 0}</Text>
+          </Space>
+          <Space>
+            <CommentOutlined />
+            <Text type="secondary">{post.commentsCount || 0}</Text>
+          </Space>
+          <Space>
+            <LikeOutlined />
+            <Text type="secondary">{post.likesCount || 0}</Text>
+          </Space>
+        </Space>
+      </div>
     </Card>
   )
 }

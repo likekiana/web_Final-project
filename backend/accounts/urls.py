@@ -6,20 +6,21 @@ from django.urls import path
 from .views import (
     UserRegisterView, UserLoginView, UserProfileView,
     UserDetailView, UserListView, UserRoleUpdateView,
-    UserStatusUpdateView
+    UserStatusUpdateView, UserPostsView
 )
 
 urlpatterns = [
-    # 认证相关路由
-    path('auth/register', UserRegisterView.as_view(), name='user-register'),
-    path('auth/login', UserLoginView.as_view(), name='user-login'),
-    path('auth/me', UserProfileView.as_view(), name='user-profile'),
+    # 认证相关路由 - 由/api/auth/前缀访问
+    path('register', UserRegisterView.as_view(), name='user-register'),
+    path('login', UserLoginView.as_view(), name='user-login'),
+    path('me', UserProfileView.as_view(), name='user-profile'),
     
-    # 用户相关路由
-    path('users/<int:id>', UserDetailView.as_view(), name='user-detail'),
+    # 用户相关路由 - 由/api/users/前缀访问
+    path('<int:id>', UserDetailView.as_view(), name='user-detail'),
+    path('<int:id>/posts', UserPostsView.as_view(), name='user-posts'),
     
-    # 管理员相关路由
-    path('admin/users', UserListView.as_view(), name='admin-user-list'),
-    path('admin/users/<int:id>/role', UserRoleUpdateView.as_view(), name='admin-user-role-update'),
-    path('admin/users/<int:id>/status', UserStatusUpdateView.as_view(), name='admin-user-status-update'),
+    # 管理员相关路由 - 由/api/admin/前缀访问
+    path('users', UserListView.as_view(), name='admin-user-list'),
+    path('users/<int:id>/role', UserRoleUpdateView.as_view(), name='admin-user-role-update'),
+    path('users/<int:id>/status', UserStatusUpdateView.as_view(), name='admin-user-status-update'),
 ]

@@ -25,9 +25,9 @@ urlpatterns = [
     # 应用路由
     path('api/auth/', include('accounts.urls')),
     path('api/users/', include('accounts.urls')),
-    path('api/categories/', include('content.urls')),
-    path('api/posts/', include('content.urls')),
-    path('api/comments/', include('content.urls')),
+    path('api/categories/', include('content.category_urls')),
+    path('api/posts/', include('content.post_urls')),
+    path('api/comments/', include('content.comment_urls')),
     path('api/likes/', include('likes.urls')),
     path('api/reports/', include('reports.urls')),
     path('api/admin/', include('accounts.urls')),

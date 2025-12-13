@@ -15,19 +15,13 @@ from .serializers import (
 )
 
 
-class CategoryListView(generics.ListCreateAPIView):
+class CategoryListView(generics.ListAPIView):
     """板块列表视图"""
     
     serializer_class = CategoryListSerializer
     permission_classes = []
     queryset = Category.objects.all()
     ordering = ['order', 'name']
-    
-    def get_permissions(self):
-        """根据请求方法设置权限"""
-        if self.request.method == 'POST':
-            return [IsAdminUser()]
-        return []
     
     def list(self, request, *args, **kwargs):
         """获取板块列表"""
@@ -158,48 +152,73 @@ class PostListView(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         """获取帖子列表"""
         queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response({
-                "success": True,
-                "message": "获取成功",
-                "data": {
-                    "posts": serializer.data,
-                    "pagination": {
-                        "currentPage": self.request.query_params.get('page', 1),
-                        "totalPages": self.paginator.num_pages,
-                        "totalItems": self.paginator.count,
-                        "pageSize": self.paginator.per_page
-                    }
-                }
-            })
         
-        serializer = self.get_serializer(queryset, many=True)
+        # 处理分页
+        page_size = 10
+        page_number = request.query_params.get('page', 1)
+        
+        try:
+            page_number = int(page_number)
+            if page_number < 1:
+                page_number = 1
+        except ValueError:
+            page_number = 1
+        
+        # 计算偏移量
+        offset = (page_number - 1) * page_size
+        
+        # 获取当前页数据
+        page_queryset = queryset[offset:offset + page_size]
+        
+        # 序列化数据
+        serializer = self.get_serializer(page_queryset, many=True)
+        
+        # 计算总页数
+        total_items = queryset.count()
+        total_pages = (total_items + page_size - 1) // page_size
+        
         return Response({
             "success": True,
             "message": "获取成功",
             "data": {
                 "posts": serializer.data,
                 "pagination": {
-                    "currentPage": 1,
-                    "totalPages": 1,
-                    "totalItems": len(serializer.data),
-                    "pageSize": len(serializer.data)
+                    "currentPage": page_number,
+                    "totalPages": total_pages,
+                    "totalItems": total_items,
+                    "pageSize": page_size
                 }
             }
         })
     
     def create(self, request, *args, **kwargs):
         """创建帖子"""
+        print("=== 创建帖子请求 ===")
+        print("请求数据:", request.data)
         serializer = PostSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        post = serializer.save()
-        return Response({
-            "success": True,
-            "message": "创建成功",
-            "data": PostSerializer(post).data
-        }, status=status.HTTP_201_CREATED)
+        try:
+            serializer.is_valid(raise_exception=True)
+            print("验证通过的数据:", serializer.validated_data)
+            post = serializer.save()
+            print("帖子创建成功:", post.id)
+            return Response({
+                "success": True,
+                "message": "创建成功",
+                "data": PostSerializer(post).data
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print("创建帖子失败:", str(e))
+            print("验证错误:", serializer.errors if hasattr(serializer, 'errors') else "无详细错误信息")
+            if hasattr(e, 'detail'):
+                print("异常详情:", e.detail)
+            return Response({
+                "success": False,
+                "message": "创建失败",
+                "error": {
+                    "code": 400,
+                    "details": serializer.errors if hasattr(serializer, 'errors') else str(e)
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Form, Input, Button, Card, Typography, message, Row, Col } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
+import { authAPI } from '../services/api'
 
 const { Title } = Typography
 
@@ -9,14 +10,25 @@ const Login = () => {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
     setLoading(true)
-    // 模拟登录请求
-    setTimeout(() => {
-      message.success('登录成功')
+    try {
+      const response = await authAPI.login(values)
+      if (response.success) {
+        // 保存access token到localStorage
+        localStorage.setItem('token', response.data?.token?.access)
+        message.success('登录成功')
+        setLoading(false)
+        navigate('/')
+      } else {
+        message.error(response.message || '登录失败')
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      message.error('登录失败，请检查邮箱和密码')
       setLoading(false)
-      navigate('/')
-    }, 1000)
+    }
   }
 
   return (

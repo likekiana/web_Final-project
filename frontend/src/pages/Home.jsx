@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Typography, Row, Col, Button } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import PostList from '../components/PostList'
+import { postAPI } from '../services/api'
 
 const { Title, Paragraph } = Typography
 
@@ -11,6 +12,7 @@ const Home = () => {
   const [category, setCategory] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     // 从URL获取板块筛选参数
@@ -19,27 +21,43 @@ const Home = () => {
       setCategory(parseInt(categoryParam))
     }
 
-    // 模拟获取帖子数据
-    const fetchPosts = async () => {
-      setLoading(true)
-      try {
-        // 这里应该调用API获取帖子数据
-        // 模拟API请求
-        setTimeout(() => {
+    // 调用API获取帖子数据
+      const fetchPosts = async () => {
+        setLoading(true)
+        try {
+          const params = {
+            categoryId: category || undefined
+          }
+          const response = await postAPI.getPosts(params)
+          // 后端返回的格式是 {success: true, message: '获取成功', data: {posts: [...], pagination: {...}}}
+          setPosts(response.data?.posts || [])
           setLoading(false)
-        }, 500)
-      } catch (error) {
-        console.error('Failed to fetch posts:', error)
-        setLoading(false)
+        } catch (error) {
+          console.error('Failed to fetch posts:', error)
+          setPosts([])
+          setLoading(false)
+        }
       }
-    }
 
     fetchPosts()
-  }, [searchParams])
+  }, [searchParams, category])
 
-  const handlePageChange = (page, pageSize) => {
-    console.log('Page changed:', page, pageSize)
-    // 这里应该调用API获取新一页的帖子数据
+  const handlePageChange = async (page, pageSize) => {
+    setLoading(true)
+    try {
+      const params = {
+        categoryId: category || undefined,
+        page: page,
+        limit: pageSize
+      }
+      const response = await postAPI.getPosts(params)
+      // 后端返回的格式是 {success: true, message: '获取成功', data: {posts: [...], pagination: {...}}}
+      setPosts(response.data?.posts || [])
+      setLoading(false)
+    } catch (error) {
+      console.error('Failed to fetch posts:', error)
+      setLoading(false)
+    }
   }
 
   return (
@@ -50,8 +68,7 @@ const Home = () => {
           type="primary" 
           icon={<PlusOutlined />}
           size="large"
-          as={Link} 
-          to="/posts/create"
+          onClick={() => navigate('/posts/create')}
         >
           发布新帖
         </Button>

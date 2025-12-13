@@ -50,6 +50,7 @@ class PostSerializer(serializers.ModelSerializer):
         source='user',
         required=False
     )
+    # 使用PrimaryKeyRelatedField来处理category_id字段
     category_id = serializers.PrimaryKeyRelatedField(
         write_only=True, 
         queryset=Category.objects.all(), 
@@ -94,7 +95,14 @@ class PostSerializer(serializers.ModelSerializer):
         # 如果没有提供user_id，使用当前登录用户
         if 'user' not in validated_data:
             validated_data['user'] = self.context['request'].user
+        
         return super().create(validated_data)
+    
+    def validate(self, attrs):
+        """验证所有字段"""
+        # 调用父类的验证方法
+        validated_attrs = super().validate(attrs)
+        return validated_attrs
 
 
 class CommentSerializer(serializers.ModelSerializer):

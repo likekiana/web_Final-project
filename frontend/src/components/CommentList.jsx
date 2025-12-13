@@ -1,72 +1,106 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, List, Typography, Avatar, Form, Input, Button, Space, Pagination, message } from 'antd'
 import { LikeOutlined, CommentOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons'
+
+// 导入API服务
+import { commentAPI } from '../services/api'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
 
-const CommentList = ({ postId, comments = [], total = 0, page = 1, pageSize = 10, onPageChange }) => {
+const CommentList = ({ postId, page = 1, pageSize = 10, onPageChange }) => {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
+  const [comments, setComments] = useState([])
+  const [total, setTotal] = useState(0)
+  const [commentsLoading, setCommentsLoading] = useState(false)
 
-  // 模拟评论数据
-  const mockComments = [
-    {
-      id: 1,
-      content: '我一般会先制定一个详细的复习计划，然后按照计划每天执行。',
-      postId: 1,
-      userId: 2,
-      username: 'user2',
-      avatar: null,
-      likesCount: 5,
-      createdAt: '2023-12-10T15:45:00Z',
-      isLiked: false
-    },
-    {
-      id: 2,
-      content: '我觉得高效记忆的关键是理解，而不是死记硬背。',
-      postId: 1,
-      userId: 3,
-      username: 'user3',
-      avatar: null,
-      likesCount: 3,
-      createdAt: '2023-12-10T16:10:00Z',
-      isLiked: true
-    },
-    {
-      id: 3,
-      content: '处理压力的话，我会适当放松一下，比如运动或者听音乐。',
-      postId: 1,
-      userId: 4,
-      username: 'user4',
-      avatar: null,
-      likesCount: 2,
-      createdAt: '2023-12-10T16:30:00Z',
-      isLiked: false
+  // 从API获取评论数据
+  useEffect(() => {
+    if (!postId) return
+    
+    const fetchComments = async () => {
+      setCommentsLoading(true)
+      try {
+        const params = {
+          page: page,
+          limit: pageSize
+        }
+        const response = await commentAPI.getComments(postId, params)
+        setComments(response.data?.comments || [])
+        setTotal(response.data?.pagination?.totalItems || 0)
+      } catch (error) {
+        console.error('Failed to fetch comments:', error)
+        setComments([])
+        setTotal(0)
+        message.error('获取评论失败')
+      } finally {
+        setCommentsLoading(false)
+      }
     }
-  ]
 
-  const displayComments = comments.length > 0 ? comments : mockComments
-  const displayTotal = total > 0 ? total : mockComments.length
+    fetchComments()
+  }, [postId, page, pageSize])
 
-  const handleSubmit = (values) => {
+  const displayComments = comments
+  const displayTotal = total
+
+  const handleSubmit = async (values) => {
     setLoading(true)
-    // 模拟提交评论请求
-    setTimeout(() => {
+    try {
+      await commentAPI.createComment(postId, values)
       message.success('评论发布成功')
       form.resetFields()
+      // 重新获取评论列表
+      const params = {
+        page: 1, // 回到第一页
+        limit: pageSize
+      }
+      const response = await commentAPI.getComments(postId, params)
+      setComments(response.data?.comments || [])
+      setTotal(response.data?.pagination?.totalItems || 0)
+    } catch (error) {
+      console.error('Failed to submit comment:', error)
+      message.error('评论发布失败')
+    } finally {
       setLoading(false)
-    }, 1000)
+    }
   }
 
-  const handleLike = (commentId) => {
-    message.success('点赞成功')
-    // 这里可以添加点赞逻辑
+  const handleLike = async (commentId) => {
+    try {
+      await commentAPI.likeComment(postId, commentId)
+      message.success('点赞成功')
+      // 重新获取评论列表
+      const params = {
+        page: page,
+        limit: pageSize
+      }
+      const response = await commentAPI.getComments(postId, params)
+      setComments(response.data?.comments || [])
+      setTotal(response.data?.pagination?.totalItems || 0)
+    } catch (error) {
+      console.error('Failed to like comment:', error)
+      message.error('点赞失败')
+    }
   }
 
-  const handleDelete = (commentId) => {
-    message.success('评论删除成功')
-    // 这里可以添加删除评论逻辑
+  const handleDelete = async (commentId) => {
+    try {
+      await commentAPI.deleteComment(postId, commentId)
+      message.success('评论删除成功')
+      // 重新获取评论列表
+      const params = {
+        page: page,
+        limit: pageSize
+      }
+      const response = await commentAPI.getComments(postId, params)
+      setComments(response.data?.comments || [])
+      setTotal(response.data?.pagination?.totalItems || 0)
+    } catch (error) {
+      console.error('Failed to delete comment:', error)
+      message.error('评论删除失败')
+    }
   }
 
   return (

@@ -41,8 +41,8 @@ class UserSerializer(serializers.ModelSerializer):
     
     def validate_email(self, value):
         """验证邮箱格式"""
-        # 确保邮箱是学校邮箱
-        if not value.endswith('@xx.edu.cn'):
+        # 确保邮箱是学校邮箱，接受所有.edu.cn结尾的邮箱
+        if not value.endswith('.edu.cn'):
             raise serializers.ValidationError("请使用学校邮箱注册")
         return value
     
@@ -67,6 +67,17 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """用户个人资料序列化器"""
+    
+    # 处理avatar字段，确保生成正确的URL
+    avatar = serializers.SerializerMethodField()
+    
+    def get_avatar(self, obj):
+        """获取avatar的完整URL"""
+        if obj.avatar and hasattr(obj.avatar, 'url'):
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.avatar.url)
+        return None
     
     class Meta:
         model = User

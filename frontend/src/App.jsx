@@ -3,7 +3,7 @@ import { Layout, Menu, Button, Space } from 'antd'
 import { 
   BookOutlined, HomeOutlined, ShoppingCartOutlined, TeamOutlined, 
   HeartOutlined, LoginOutlined, UserAddOutlined, HomeTwoTone, 
-  BellOutlined, FileTextOutlined, UserOutlined 
+  BellOutlined, FileTextOutlined, UserOutlined, LogoutOutlined 
 } from '@ant-design/icons'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 
@@ -51,6 +51,9 @@ const AppHeader = () => {
   // 只有在非登录/注册页面显示完整导航栏
   const showFullNav = !['/login', '/register'].includes(location.pathname)
 
+  // 检查用户是否已登录
+  const isLoggedIn = localStorage.getItem('token')
+
   return (
     <Header className="app-header">
       {showFullNav ? (
@@ -67,15 +70,28 @@ const AppHeader = () => {
             className="app-menu"
           />
           <Space>
-            <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/profile')} style={{ color: '#fff' }}>
-              个人中心
-            </Button>
-            <Button type="link" icon={<LoginOutlined />} onClick={() => navigate('/login')} style={{ color: '#fff' }}>
-              登录
-            </Button>
-            <Button type="primary" icon={<UserAddOutlined />} onClick={() => navigate('/register')}>
-              注册
-            </Button>
+            {isLoggedIn ? (
+              <>
+                <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/profile')} style={{ color: '#fff' }}>
+                  个人中心
+                </Button>
+                <Button type="link" icon={<LogoutOutlined />} onClick={() => {
+                  localStorage.removeItem('token')
+                  navigate('/login')
+                }} style={{ color: '#fff' }}>
+                  退出登录
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button type="link" icon={<LoginOutlined />} onClick={() => navigate('/login')} style={{ color: '#fff' }}>
+                  登录
+                </Button>
+                <Button type="primary" icon={<UserAddOutlined />} onClick={() => navigate('/register')}>
+                  注册
+                </Button>
+              </>
+            )}
           </Space>
         </>
       ) : (

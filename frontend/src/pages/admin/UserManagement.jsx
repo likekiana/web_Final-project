@@ -224,7 +224,7 @@ const UserManagement = () => {
       {/* 编辑用户模态框 */}
       <Modal
         title="编辑用户信息"
-        visible={isModalVisible}
+        open={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
         confirmLoading={loading}

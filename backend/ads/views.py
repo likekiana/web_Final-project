@@ -207,20 +207,22 @@ class AdvertisementApproveView(generics.UpdateAPIView):
                 }
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = self.get_serializer(
-            instance, 
-            data={'status': request.data['status']}, 
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        advertisement = serializer.save()
+        # 调用模型的approve或reject方法
+        if request.data['status'] == 'active':
+            instance.approve(request.user)
+        elif request.data['status'] == 'rejected':
+            instance.reject(request.user, request.data.get('review_notes', ''))
+        else:
+            # 更新其他状态
+            instance.status = request.data['status']
+            instance.save(update_fields=['status'])
         
         message = "广告已通过审核" if request.data['status'] == 'active' else "广告已拒绝"
         
         return Response({
             "success": True,
             "message": message,
-            "data": AdvertisementSerializer(advertisement).data
+            "data": AdvertisementSerializer(instance).data
         })
 
 

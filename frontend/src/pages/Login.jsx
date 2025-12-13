@@ -19,7 +19,14 @@ const Login = () => {
         localStorage.setItem('token', response.data?.token?.access)
         message.success('登录成功')
         setLoading(false)
-        navigate('/')
+        
+        // 根据用户角色跳转到不同页面
+        const userRole = response.data?.user?.role
+        if (userRole === 'admin' || userRole === 'superAdmin') {
+          navigate('/admin')
+        } else {
+          navigate('/')
+        }
       } else {
         message.error(response.message || '登录失败')
         setLoading(false)

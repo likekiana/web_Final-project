@@ -1,31 +1,45 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Table, Typography, Button, Space, Tag, Input, Form, Modal, message } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { categoryAPI } from '../../services/api'
 
 const { Title } = Typography
 const { Search } = Input
 
 const CategoryManagement = () => {
   const [loading, setLoading] = useState(false)
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [form] = Form.useForm()
+  const [categories, setCategories] = useState([])
 
-  // 模拟板块数据
-  const mockCategories = [
-    { id: 1, name: '学习学术区', description: '学习资料共享、考研/保研信息、学习经验交流、学术问题讨论', icon: 'book', color: '#1890ff', postCount: 100, order: 1 },
-    { id: 2, name: '校园生活区', description: '生活攻略、失物招领、校内资讯、生活问答', icon: 'home', color: '#52c41a', postCount: 200, order: 2 },
-    { id: 3, name: '二手交易区', description: '教材书籍交易、数码产品交易、生活用品交易、交易信誉评价', icon: 'shopping-cart', color: '#faad14', postCount: 150, order: 3 },
-    { id: 4, name: '活动社交区', description: '社团活动发布、比赛/竞赛信息、运动/娱乐组队、社交互动', icon: 'team', color: '#722ed1', postCount: 120, order: 4 },
-    { id: 5, name: '实习就业区', description: '实习信息发布、求职经验分享、企业宣讲会信息、简历/面试指导', icon: 'briefcase', color: '#eb2f96', postCount: 90, order: 5 },
-    { id: 6, name: '真情流露区', description: '树洞倾诉、表白墙功能、匿名交流、情感支持', icon: 'heart', color: '#f5222d', postCount: 80, order: 6 },
-    { id: 7, name: '广告专区', description: '商户信息发布、优惠活动宣传、校园服务推广、官方通知公告', icon: 'announcement', color: '#fa8c16', postCount: 50, order: 7 }
-  ]
+  // 获取板块列表
+  const fetchCategories = async () => {
+    setCategoriesLoading(true)
+    try {
+      const response = await categoryAPI.getCategories()
+      if (response.success) {
+        setCategories(response.data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
+      message.error('获取板块列表失败')
+      setCategories([])
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
+
+  // 初始化获取板块数据
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
   // 筛选板块
-  const filteredCategories = mockCategories.filter(category => 
+  const filteredCategories = categories.filter(category => 
     category.name.toLowerCase().includes(searchText.toLowerCase()) ||
     category.description.toLowerCase().includes(searchText.toLowerCase())
   )
@@ -67,8 +81,8 @@ const CategoryManagement = () => {
     },
     {
       title: '帖子数量',
-      dataIndex: 'postCount',
-      key: 'postCount',
+      dataIndex: 'post_count',
+      key: 'post_count',
       render: (text) => <Tag color="blue">{text}</Tag>
     },
     {
@@ -117,22 +131,45 @@ const CategoryManagement = () => {
       okText: '确定',
       okType: 'danger',
       cancelText: '取消',
-      onOk: () => {
-        message.success('板块删除成功')
-        // 这里可以添加删除板块的逻辑
+      onOk: async () => {
+        try {
+          const response = await categoryAPI.deleteCategory(categoryId)
+          if (response.success) {
+            message.success('板块删除成功')
+            // 重新获取板块列表
+            fetchCategories()
+          }
+        } catch (error) {
+          console.error('Failed to delete category:', error)
+          message.error('板块删除失败')
+        }
       }
     })
   }
 
   const handleModalOk = () => {
-    form.validateFields().then(values => {
+    form.validateFields().then(async values => {
       setLoading(true)
-      setTimeout(() => {
+      try {
+        let response
+        if (isEditMode) {
+          response = await categoryAPI.updateCategory(selectedCategory.id, values)
+        } else {
+          response = await categoryAPI.createCategory(values)
+        }
+        
+        if (response.success) {
+          setIsModalVisible(false)
+          message.success(isEditMode ? '板块更新成功' : '板块创建成功')
+          // 重新获取板块列表
+          fetchCategories()
+        }
+      } catch (error) {
+        console.error('Failed to save category:', error)
+        message.error(isEditMode ? '板块更新失败' : '板块创建失败')
+      } finally {
         setLoading(false)
-        setIsModalVisible(false)
-        message.success(isEditMode ? '板块更新成功' : '板块创建成功')
-        // 这里可以添加保存板块的逻辑
-      }, 1000)
+      }
     }).catch(info => {
       console.log('Validation failed:', info)
     })
@@ -173,7 +210,7 @@ const CategoryManagement = () => {
           columns={columns}
           dataSource={filteredCategories}
           rowKey="id"
-          loading={loading}
+          loading={categoriesLoading}
           pagination={{ pageSize: 10 }}
         />
       </Card>
@@ -181,7 +218,7 @@ const CategoryManagement = () => {
       {/* 添加/编辑板块模态框 */}
       <Modal
         title={isEditMode ? '编辑板块' : '添加板块'}
-        visible={isModalVisible}
+        open={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
         confirmLoading={loading}

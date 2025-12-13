@@ -83,6 +83,15 @@ const Home = () => {
         posts={posts}
         category={category}
         onPageChange={handlePageChange}
+        onCategoryChange={(categoryId) => {
+          const newSearchParams = new URLSearchParams(searchParams);
+          if (categoryId) {
+            newSearchParams.set('category', categoryId);
+          } else {
+            newSearchParams.delete('category');
+          }
+          navigate(`?${newSearchParams.toString()}`);
+        }}
       />
     </div>
   )

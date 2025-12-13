@@ -70,6 +70,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     # 处理avatar字段，确保生成正确的URL
     avatar = serializers.SerializerMethodField()
+    # 添加可写入的avatar字段，用于头像上传
+    avatar_file = serializers.ImageField(write_only=True, required=False, allow_null=True)
     
     def get_avatar(self, obj):
         """获取avatar的完整URL"""
@@ -79,10 +81,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.avatar.url)
         return None
     
+    def update(self, instance, validated_data):
+        """更新用户资料，处理头像上传"""
+        if 'avatar_file' in validated_data:
+            # 更新头像文件
+            instance.avatar = validated_data.pop('avatar_file')
+        return super().update(instance, validated_data)
+    
     class Meta:
         model = User
         fields = (
-            'id', 'username', 'email', 'avatar', 'bio',
+            'id', 'username', 'email', 'avatar', 'avatar_file', 'bio',
             'role', 'reputation', 'post_count', 'comment_count',
             'created_at'
         )

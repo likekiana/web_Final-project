@@ -52,11 +52,7 @@ class LikeToggleView(generics.GenericAPIView):
         if not created:
             # 已点赞，取消点赞
             like.delete()
-            target.decrement_likes_count()
             is_liked = False
-        else:
-            # 未点赞，添加点赞
-            target.increment_likes_count()
         
         # 重新获取目标对象，获取最新的点赞数
         if target_type == 'post':
@@ -86,7 +82,6 @@ class LikeToggleView(generics.GenericAPIView):
             )
             # 已点赞，取消点赞
             like.delete()
-            target.decrement_likes_count()
             is_liked = False
         except Like.DoesNotExist:
             # 未点赞，不需要操作

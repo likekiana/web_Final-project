@@ -1,5 +1,13 @@
 # 账号注册模板
 test@campus.edu.cn
+
+管理员账号信息 ：
+
+- 用户名: admin
+- 邮箱: admin@campus.edu.cn
+- 密码: admin123
+- 角色: superAdmin
+- 
 ## 注册说明
 1. 注册需要使用学校邮箱（必须以 `.edu.cn` 结尾）
 2. 密码长度至少6个字符

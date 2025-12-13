@@ -75,6 +75,10 @@ const AppHeader = () => {
                 <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/profile')} style={{ color: '#fff' }}>
                   个人中心
                 </Button>
+                {/* 管理员入口 - 暂时隐藏，后续添加权限检查后显示 */}
+                <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/admin')} style={{ color: '#fff' }}>
+                  管理后台
+                </Button>
                 <Button type="link" icon={<LogoutOutlined />} onClick={() => {
                   localStorage.removeItem('token')
                   navigate('/login')

@@ -20,9 +20,13 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token')
         if (token) {
           // 调用API获取当前用户信息
-          const userData = await authAPI.getCurrentUser()
-          setUser(userData)
-          setIsAuthenticated(true)
+          const response = await authAPI.getCurrentUser()
+          if (response.success) {
+            setUser(response.data)
+            setIsAuthenticated(true)
+          } else {
+            localStorage.removeItem('token')
+          }
         }
       } catch (error) {
         console.error('Failed to check auth status:', error)
@@ -41,16 +45,18 @@ export const AuthProvider = ({ children }) => {
     setLoading(true)
     try {
       const response = await authAPI.login(credentials)
-      const { token, user: userData } = response
-      
-      // 保存token到localStorage
-      localStorage.setItem('token', token)
-      
-      // 更新状态
-      setUser(userData)
-      setIsAuthenticated(true)
-      
-      return response
+      if (response.success) {
+        // 保存token到localStorage
+        localStorage.setItem('token', response.data?.token?.access)
+        
+        // 更新状态
+        setUser(response.data?.user)
+        setIsAuthenticated(true)
+        
+        return response
+      } else {
+        throw new Error(response.message || '登录失败')
+      }
     } catch (error) {
       console.error('Login failed:', error)
       throw error

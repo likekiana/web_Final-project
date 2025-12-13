@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Card, List, Typography, Avatar, Form, Input, Button, Space, Pagination, message } from 'antd'
-import { LikeOutlined, CommentOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons'
+import { Card, List, Typography, Avatar, Form, Input, Button, Space, Pagination, message, Modal, Select } from 'antd'
+import { LikeOutlined, CommentOutlined, DeleteOutlined, UserOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 
 // 导入API服务
 import { commentAPI } from '../services/api'
@@ -14,6 +14,19 @@ const CommentList = ({ postId, page = 1, pageSize = 10, onPageChange }) => {
   const [comments, setComments] = useState([])
   const [total, setTotal] = useState(0)
   const [commentsLoading, setCommentsLoading] = useState(false)
+  // 举报功能状态
+  const [reportModalVisible, setReportModalVisible] = useState(false)
+  const [reportingCommentId, setReportingCommentId] = useState(null)
+  const [reportReason, setReportReason] = useState('')
+  const [reportLoading, setReportLoading] = useState(false)
+  
+  // 举报类型选项
+  const reportTypeOptions = [
+    { value: 'spam', label: '垃圾广告' },
+    { value: 'pornography', label: '色情内容' },
+    { value: 'violence', label: '暴力内容' },
+    { value: 'other', label: '其他违规内容' }
+  ]
 
   // 从API获取评论数据
   useEffect(() => {
@@ -102,6 +115,42 @@ const CommentList = ({ postId, page = 1, pageSize = 10, onPageChange }) => {
       message.error('评论删除失败')
     }
   }
+  
+  // 打开举报模态框
+  const handleOpenReportModal = (commentId) => {
+    setReportingCommentId(commentId)
+    setReportModalVisible(true)
+    setReportReason('')
+  }
+  
+  // 关闭举报模态框
+  const handleCloseReportModal = () => {
+    setReportModalVisible(false)
+    setReportingCommentId(null)
+    setReportReason('')
+  }
+  
+  // 提交举报
+  const handleSubmitReport = async () => {
+    if (!reportingCommentId || !reportReason) {
+      message.error('请选择举报类型')
+      return
+    }
+    
+    setReportLoading(true)
+    try {
+      await commentAPI.reportComment(reportingCommentId, {
+        type: reportReason
+      })
+      message.success('举报成功，我们将尽快处理')
+      handleCloseReportModal()
+    } catch (error) {
+      console.error('Failed to report comment:', error)
+      message.error('举报失败，请稍后重试')
+    } finally {
+      setReportLoading(false)
+    }
+  }
 
   return (
     <div>
@@ -145,12 +194,20 @@ const CommentList = ({ postId, page = 1, pageSize = 10, onPageChange }) => {
               actions={[
                 <Space size="middle">
                   <Button
-                    type={comment.isLiked ? 'primary' : 'default'}
-                    icon={<LikeOutlined />}
-                    onClick={() => handleLike(comment.id)}
+                      type={comment.is_liked ? 'primary' : 'default'}
+                      icon={<LikeOutlined />}
+                      onClick={() => handleLike(comment.id)}
+                      size="small"
+                    >
+                      {comment.likes_count}
+                    </Button>
+                  <Button
+                    type="default"
+                    icon={<ExclamationCircleOutlined />}
+                    onClick={() => handleOpenReportModal(comment.id)}
                     size="small"
                   >
-                    {comment.likesCount}
+                    举报
                   </Button>
                   <Button
                     type="danger"
@@ -165,12 +222,12 @@ const CommentList = ({ postId, page = 1, pageSize = 10, onPageChange }) => {
               style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
             >
               <List.Item.Meta
-                avatar={<Avatar icon={<UserOutlined />} src={comment.avatar} />}
+                avatar={<Avatar icon={<UserOutlined />} src={comment.user?.avatar} />}
                 title={
                   <Space size="middle">
-                    <Text strong>{comment.username}</Text>
+                    <Text strong>{comment.user?.username}</Text>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {new Date(comment.createdAt).toLocaleString()}
+                      {new Date(comment.created_at).toLocaleString()}
                     </Text>
                   </Space>
                 }
@@ -194,6 +251,32 @@ const CommentList = ({ postId, page = 1, pageSize = 10, onPageChange }) => {
           </div>
         )}
       </Card>
+      
+      {/* 举报模态框 */}
+      <Modal
+        title="举报评论"
+        open={reportModalVisible}
+        onOk={handleSubmitReport}
+        onCancel={handleCloseReportModal}
+        confirmLoading={reportLoading}
+        okText="提交举报"
+        cancelText="取消"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <h4 style={{ marginBottom: 8 }}>请选择举报类型：</h4>
+          <Select
+            value={reportReason}
+            onChange={setReportReason}
+            style={{ width: '100%' }}
+            options={reportTypeOptions}
+            placeholder="请选择举报类型"
+          />
+        </div>
+        <div>
+          <h4>举报说明：</h4>
+          <p style={{ color: '#999', fontSize: '14px' }}>请确保举报内容属实，恶意举报将受到处罚。</p>
+        </div>
+      </Modal>
     </div>
   )
 }

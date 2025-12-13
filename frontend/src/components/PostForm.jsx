@@ -23,41 +23,20 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
         const response = await categoryAPI.getCategories()
         console.log('Categories response:', response)
         
-        // 修复数据处理逻辑，确保能正确提取板块数据
-        let categoriesData = []
-        
-        if (response) {
-          // 检查多种可能的响应格式
-          if (response.success) {
-            // 后端返回格式：{success: true, message: '获取成功', data: Array(5)}
-            categoriesData = Array.isArray(response.data) ? response.data : []
-          } else if (Array.isArray(response)) {
-            categoriesData = response
-          } else if (Array.isArray(response.data)) {
-            categoriesData = response.data
-          }
-        }
+        // 正确处理API响应格式：{success: true, message: '获取成功', data: [...板块数据...]}
+        const categoriesData = response.success ? (Array.isArray(response.data) ? response.data : []) : []
         
         setCategories(categoriesData)
         console.log('Categories set:', categoriesData)
       } catch (error) {
         console.error('Failed to fetch categories:', error)
-        setCategories([])
         message.error('获取板块数据失败')
+        setCategories([])
       }
     }
 
     fetchCategories()
   }, [])
-
-  // 直接使用categories数组，不再需要额外处理
-
-  // 帖子类型选项
-  const postTypeOptions = [
-    { value: 'normal', label: '普通帖子' },
-    { value: 'trade', label: '二手交易' },
-    { value: 'advertisement', label: '广告帖子' }
-  ]
 
   const handleSubmit = async (values) => {
     setLoading(true)
@@ -66,8 +45,7 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
       const postData = {
         title: values.title,
         content: values.content,
-        category_id: values.categoryId, // 使用后端期望的字段名
-        type: values.type || 'normal'
+        category_id: values.categoryId // 使用后端期望的字段名
         // 图片上传功能暂不实现
       }
       
@@ -139,20 +117,6 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
         </Form.Item>
 
         <Form.Item
-          name="type"
-          rules={[{ required: true, message: '请选择帖子类型!' }]}
-          label="帖子类型"
-        >
-          <Select placeholder="请选择帖子类型" size="large">
-            {postTypeOptions.map(option => (
-              <Option key={option.value} value={option.value}>
-                {option.label}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
-
-        <Form.Item
           name="content"
           rules={[{ required: true, message: '请输入帖子内容!' }]}
           label="帖子内容"
@@ -172,7 +136,7 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
           <Upload
             action="https://run.mocky.io/v3/435e224c-44fb-4773-9faf-380c5e6a2188"
             listType="picture-card"
-            fileList={form.getFieldValue('images')}
+            fileList={form.getFieldValue('images') || []}
             onPreview={handlePreview}
             onChange={handleChange}
             beforeUpload={() => false} // 阻止自动上传，实际项目中需要调整

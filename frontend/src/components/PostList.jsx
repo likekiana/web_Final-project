@@ -10,7 +10,7 @@ const { Title, Paragraph, Text } = Typography
 const { Option } = Select
 const { Search } = Input
 
-const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange, category = null }) => {
+const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange, category = null, onCategoryChange }) => {
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState('desc')
   const [selectedCategory, setSelectedCategory] = useState(category)
@@ -28,7 +28,9 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
     const fetchCategories = async () => {
       try {
         const response = await categoryAPI.getCategories()
-        setCategories(response.data || [])
+        // 正确处理API响应格式：{success: true, message: '获取成功', data: [...板块数据...]}
+        const categoriesData = response.success ? (Array.isArray(response.data) ? response.data : []) : []
+        setCategories(categoriesData)
       } catch (error) {
         console.error('Failed to fetch categories:', error)
         setCategories([])
@@ -38,8 +40,8 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
     fetchCategories()
   }, [])
 
-  // 筛选和搜索帖子
-  const filterAndSearchPosts = (postsToFilter) => {
+  // 搜索和排序帖子
+  const searchAndSortPosts = (postsToFilter) => {
     // 确保postsToFilter是数组
     const safePosts = Array.isArray(postsToFilter) ? postsToFilter : []
     let filtered = [...safePosts]
@@ -51,11 +53,6 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
         post.title?.toLowerCase().includes(searchKeyword) || 
         post.content?.toLowerCase().includes(searchKeyword)
       )
-    }
-
-    // 板块筛选
-    if (selectedCategory) {
-      filtered = filtered.filter(post => post.categoryId === selectedCategory)
     }
 
     // 排序
@@ -83,7 +80,7 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
     return filtered
   }
 
-  const displayPosts = filterAndSearchPosts(posts)
+  const displayPosts = searchAndSortPosts(posts)
   const displayTotal = posts.length
 
   const handleSort = (field) => {
@@ -134,7 +131,10 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                 <Select
                   placeholder="选择板块"
                   style={{ width: 200, marginLeft: 8 }}
-                  onChange={setSelectedCategory}
+                  onChange={(value) => {
+                    setSelectedCategory(value);
+                    onCategoryChange(value);
+                  }}
                   allowClear
                   value={selectedCategory}
                 >
@@ -165,9 +165,9 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                   最热
                 </Button>
                 <Button
-                  type={sortBy === 'comment_count' ? 'primary' : 'default'}
-                  onClick={() => handleSort('comment_count')}
-                  icon={sortOrder === 'desc' && sortBy === 'comment_count' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+                  type={sortBy === 'comments_count' ? 'primary' : 'default'}
+                  onClick={() => handleSort('comments_count')}
+                  icon={sortOrder === 'desc' && sortBy === 'comments_count' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
                 >
                   评论最多
                 </Button>
@@ -202,7 +202,7 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                 </Link>
               }
               extra={
-                <Tag color="blue">{post.categoryName}</Tag>
+                <Tag color="blue">{post.category?.name}</Tag>
               }
               style={{ marginBottom: 16 }}
             >
@@ -212,12 +212,12 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
               
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
                 <Space>
-                  <Avatar icon={<UserOutlined />} src={post.avatar} size={32} />
+                  <Avatar icon={<UserOutlined />} src={post.user?.avatar} size={32} />
                   <div>
-                    <Text strong>{post.username}</Text>
+                    <Text strong>{post.user?.username}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {new Date(post.createdAt).toLocaleString()}
+                      {new Date(post.created_at).toLocaleString()}
                     </Text>
                   </div>
                 </Space>
@@ -229,7 +229,7 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                   </Space>
                   <Space>
                     <CommentOutlined />
-                    <Text type="secondary">{post.comment_count}</Text>
+                    <Text type="secondary">{post.comments_count}</Text>
                   </Space>
                   <Space>
                     <LikeOutlined />

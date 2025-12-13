@@ -3,7 +3,7 @@ import { Layout, Menu, Typography } from 'antd'
 import { UserOutlined, FileTextOutlined, TagOutlined, SettingOutlined, HomeOutlined } from '@ant-design/icons'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 
-// 导入管理员子页面（后续创建）
+// 导入管理员子页面
 import AdminHome from './admin/AdminHome'
 import UserManagement from './admin/UserManagement'
 import ContentManagement from './admin/ContentManagement'

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Table, Typography, Button, Space, Tag, Input, Select, Modal, message, Tabs } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { adminAPI, commentAPI } from '../../services/api'
 
 const { Title } = Typography
 const { Search } = Input
@@ -12,28 +13,70 @@ const ContentManagement = () => {
   const [searchText, setSearchText] = useState('')
   const [contentType, setContentType] = useState('posts') // 'posts' or 'comments'
   const [selectedTab, setSelectedTab] = useState('posts')
+  const [posts, setPosts] = useState([])
+  const [comments, setComments] = useState([])
+  const [postsLoading, setPostsLoading] = useState(false)
+  const [commentsLoading, setCommentsLoading] = useState(false)
 
-  // 模拟帖子数据
-  const mockPosts = [
-    { id: 1, title: '如何高效准备期末考试？', categoryName: '学习学术区', username: 'testuser', status: 'active', likesCount: 15, commentsCount: 8, createdAt: '2023-12-10T15:30:00Z' },
-    { id: 2, title: '出售二手笔记本电脑', categoryName: '二手交易区', username: 'user2', status: 'active', likesCount: 5, commentsCount: 3, createdAt: '2023-12-09T10:20:00Z' },
-    { id: 3, title: '社团招新啦！', categoryName: '活动社交区', username: 'user3', status: 'active', likesCount: 20, commentsCount: 12, createdAt: '2023-12-08T14:45:00Z' }
-  ]
+  // 获取帖子列表
+  const fetchPosts = async () => {
+    setPostsLoading(true)
+    try {
+      const params = {
+        page: 1,
+        limit: 100,
+        search: searchText
+      }
+      const response = await adminAPI.getPosts(params)
+      if (response.success) {
+        setPosts(response.data?.posts || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch posts:', error)
+      message.error('获取帖子列表失败')
+      setPosts([])
+    } finally {
+      setPostsLoading(false)
+    }
+  }
 
-  // 模拟评论数据
-  const mockComments = [
-    { id: 1, content: '我一般会先制定一个详细的复习计划，然后按照计划每天执行。', postId: 1, postTitle: '如何高效准备期末考试？', username: 'user2', status: 'active', likesCount: 5, createdAt: '2023-12-10T15:45:00Z' },
-    { id: 2, content: '我觉得高效记忆的关键是理解，而不是死记硬背。', postId: 1, postTitle: '如何高效准备期末考试？', username: 'user3', status: 'active', likesCount: 3, createdAt: '2023-12-10T16:10:00Z' }
-  ]
+  // 获取评论列表
+  const fetchComments = async () => {
+    setCommentsLoading(true)
+    try {
+      const params = {
+        page: 1,
+        limit: 100,
+        search: searchText
+      }
+      // 注意：这里假设adminAPI有getComments方法，如果没有，需要调整
+      const response = await adminAPI.getComments(params)
+      if (response.success) {
+        setComments(response.data?.comments || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch comments:', error)
+      message.error('获取评论列表失败')
+      setComments([])
+    } finally {
+      setCommentsLoading(false)
+    }
+  }
+
+  // 初始化数据
+  useEffect(() => {
+    fetchPosts()
+    fetchComments()
+  }, [searchText])
 
   // 筛选帖子
-  const filteredPosts = mockPosts.filter(post => 
+  const filteredPosts = posts.filter(post => 
     post.title.toLowerCase().includes(searchText.toLowerCase()) ||
     post.username.toLowerCase().includes(searchText.toLowerCase())
   )
 
   // 筛选评论
-  const filteredComments = mockComments.filter(comment => 
+  const filteredComments = comments.filter(comment => 
     comment.content.toLowerCase().includes(searchText.toLowerCase()) ||
     comment.username.toLowerCase().includes(searchText.toLowerCase()) ||
     comment.postTitle.toLowerCase().includes(searchText.toLowerCase())
@@ -185,16 +228,36 @@ const ContentManagement = () => {
     setSearchText(value)
   }
 
-  const handleDelete = (id, type) => {
+  const handleDelete = async (id, type) => {
     Modal.confirm({
       title: '确认删除',
       content: `确定要删除这个${type === 'post' ? '帖子' : '评论'}吗？`,
       okText: '确定',
       okType: 'danger',
       cancelText: '取消',
-      onOk: () => {
-        message.success(`${type === 'post' ? '帖子' : '评论'}删除成功`)
-        // 这里可以添加删除逻辑
+      onOk: async () => {
+        setLoading(true)
+        try {
+          if (type === 'post') {
+            const response = await adminAPI.deletePost(id)
+            if (response.success) {
+              message.success('帖子删除成功')
+              fetchPosts() // 重新获取帖子列表
+            }
+          } else {
+            // 注意：这里假设adminAPI有deleteComment方法，如果没有，需要调整为合适的API调用
+            const response = await adminAPI.deleteComment(id)
+            if (response.success) {
+              message.success('评论删除成功')
+              fetchComments() // 重新获取评论列表
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to delete ${type}:`, error)
+          message.error(`${type === 'post' ? '帖子' : '评论'}删除失败`)
+        } finally {
+          setLoading(false)
+        }
       }
     })
   }

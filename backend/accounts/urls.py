@@ -8,6 +8,7 @@ from .views import (
     UserDetailView, UserListView, UserRoleUpdateView,
     UserStatusUpdateView, UserPostsView
 )
+from content.views import AdminCommentListView, AdminCommentDeleteView
 
 urlpatterns = [
     # 认证相关路由 - 由/api/auth/前缀访问
@@ -23,4 +24,7 @@ urlpatterns = [
     path('users', UserListView.as_view(), name='admin-user-list'),
     path('users/<int:id>/role', UserRoleUpdateView.as_view(), name='admin-user-role-update'),
     path('users/<int:id>/status', UserStatusUpdateView.as_view(), name='admin-user-status-update'),
+    # 评论管理路由
+    path('comments', AdminCommentListView.as_view(), name='admin-comment-list'),
+    path('comments/<int:id>', AdminCommentDeleteView.as_view(), name='admin-comment-delete'),
 ]

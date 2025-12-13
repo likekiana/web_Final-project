@@ -37,7 +37,7 @@ class UserRegisterView(generics.CreateAPIView):
             "success": True,
             "message": "注册成功",
             "data": {
-                "user": UserProfileSerializer(user).data,
+                "user": UserProfileSerializer(user, context={'request': request}).data,
                 "token": {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token)
@@ -91,7 +91,7 @@ class UserLoginView(generics.GenericAPIView):
             "success": True,
             "message": "登录成功",
             "data": {
-                "user": UserProfileSerializer(user).data,
+                "user": UserProfileSerializer(user, context={'request': request}).data,
                 "token": {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token)
@@ -126,7 +126,8 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         serializer = self.get_serializer(
             instance, 
             data=request.data, 
-            partial=True
+            partial=True,
+            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -335,34 +336,41 @@ class UserPostsView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """获取用户帖子列表"""
         queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response({
-                "success": True,
-                "message": "获取成功",
-                "data": {
-                    "posts": serializer.data,
-                    "pagination": {
-                        "currentPage": self.request.query_params.get('page', 1),
-                        "totalPages": self.paginator.num_pages,
-                        "totalItems": self.paginator.count,
-                        "pageSize": self.paginator.per_page
-                    }
-                }
-            })
         
-        serializer = self.get_serializer(queryset, many=True)
+        # 处理分页
+        page_size = 10
+        page_number = request.query_params.get('page', 1)
+        
+        try:
+            page_number = int(page_number)
+            if page_number < 1:
+                page_number = 1
+        except ValueError:
+            page_number = 1
+        
+        # 计算偏移量
+        offset = (page_number - 1) * page_size
+        
+        # 获取当前页数据
+        page_queryset = queryset[offset:offset + page_size]
+        
+        # 序列化数据
+        serializer = self.get_serializer(page_queryset, many=True, context={'request': request})
+        
+        # 计算总页数
+        total_items = queryset.count()
+        total_pages = (total_items + page_size - 1) // page_size
+        
         return Response({
             "success": True,
             "message": "获取成功",
             "data": {
                 "posts": serializer.data,
                 "pagination": {
-                    "currentPage": 1,
-                    "totalPages": 1,
-                    "totalItems": len(serializer.data),
-                    "pageSize": len(serializer.data)
+                    "currentPage": page_number,
+                    "totalPages": total_pages,
+                    "totalItems": total_items,
+                    "pageSize": page_size
                 }
             }
         })

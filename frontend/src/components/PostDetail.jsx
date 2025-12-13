@@ -50,14 +50,14 @@ const PostDetail = ({ postId }) => {
         <div style={{ textAlign: 'center', padding: '50px 0' }}>
           <Text type="danger">{error || '帖子不存在'}</Text>
           <br />
-          <Button 
-            icon={<ArrowLeftOutlined />} 
-            as={Link} 
-            to="/"
-            style={{ marginTop: 16 }}
-          >
-            返回列表
-          </Button>
+          <Link to="/">
+            <Button 
+              icon={<ArrowLeftOutlined />} 
+              style={{ marginTop: 16 }}
+            >
+              返回列表
+            </Button>
+          </Link>
         </div>
       </Card>
     )
@@ -68,13 +68,13 @@ const PostDetail = ({ postId }) => {
       title={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Title level={3} style={{ margin: 0 }}>{post.title}</Title>
-          <Button 
-            icon={<ArrowLeftOutlined />} 
-            as={Link} 
-            to="/"
-          >
-            返回列表
-          </Button>
+          <Link to="/">
+            <Button 
+              icon={<ArrowLeftOutlined />} 
+            >
+              返回列表
+            </Button>
+          </Link>
         </div>
       }
       style={{ marginBottom: 24 }}
@@ -94,12 +94,12 @@ const PostDetail = ({ postId }) => {
       {/* 帖子作者信息和统计 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
         <Space>
-          <Avatar icon={<UserOutlined />} src={post.avatar} size={40} />
+          <Avatar icon={<UserOutlined />} src={post.user?.avatar} size={40} />
           <div>
-            <Text strong>{post.username}</Text>
+            <Text strong>{post.user?.username}</Text>
             <br />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {new Date(post.createdAt).toLocaleString()}
+              {new Date(post.created_at).toLocaleString()}
             </Text>
           </div>
         </Space>

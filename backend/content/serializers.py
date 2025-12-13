@@ -164,7 +164,7 @@ class PostListSerializer(PostSerializer):
     
     class Meta(PostSerializer.Meta):
         fields = (
-            'id', 'title', 'type', 'user', 'category',
+            'id', 'title', 'type', 'user', 'category', 'category_id',
             'likes_count', 'comments_count', 'views_count',
             'is_liked', 'is_sticky', 'is_essential',
             'created_at'

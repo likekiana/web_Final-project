@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input } from 'antd'
-import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons'
+import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input, Upload } from 'antd'
+import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined, UploadOutlined } from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
 import { authAPI, userAPI } from '../services/api'
 
@@ -65,7 +65,15 @@ const Profile = () => {
   const handleSaveProfile = async (values) => {
     setSaveLoading(true)
     try {
-      const response = await userAPI.updateUserInfo(user.id, values)
+      // 创建FormData对象处理文件上传
+      const formData = new FormData();
+      formData.append('username', values.username);
+      formData.append('bio', values.bio || '');
+      if (values.avatarFile) {
+        formData.append('avatar_file', values.avatarFile);
+      }
+      
+      const response = await userAPI.updateUserInfo(user.id, formData, true)
       if (response.success) {
         setUser(response.data)
         setIsEditing(false)
@@ -116,19 +124,40 @@ const Profile = () => {
         <Col xs={24} md={8}>
           <Card title="用户信息" hoverable>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <Avatar
-                size={100}
-                icon={<UserOutlined />}
-                src={user.avatar}
-                style={{ marginBottom: 16 }}
-              />
               {isEditing ? (
                 <Form
                   form={form}
                   layout="vertical"
                   onFinish={handleSaveProfile}
                   style={{ marginTop: 16 }}
+                  encType="multipart/form-data"
                 >
+                  <div style={{ marginBottom: 16 }}>
+                    <Avatar
+                      size={100}
+                      icon={<UserOutlined />}
+                      src={form.getFieldValue('avatarPreview') || user.avatar}
+                      style={{ marginBottom: 16 }}
+                    />
+                    <Form.Item name="avatarFile">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              form.setFieldsValue({ avatarPreview: event.target.result });
+                            };
+                            reader.readAsDataURL(file);
+                            form.setFieldsValue({ avatarFile: file });
+                          }
+                        }} 
+                        style={{ display: 'block', margin: '0 auto' }}
+                      />
+                    </Form.Item>
+                  </div>
                   <Form.Item
                     name="username"
                     rules={[{ required: true, message: '请输入用户名' }]}
@@ -153,6 +182,12 @@ const Profile = () => {
                 </Form>
               ) : (
                 <div>
+                  <Avatar
+                    size={100}
+                    icon={<UserOutlined />}
+                    src={user.avatar}
+                    style={{ marginBottom: 16 }}
+                  />
                   <Title level={3} style={{ margin: 0 }}>{user.username}</Title>
                   <Text type="secondary">{user.email}</Text>
                   <Paragraph style={{ margin: '16px 0 24px' }}>{user.bio || '暂无个人简介'}</Paragraph>
@@ -233,15 +268,15 @@ const Profile = () => {
               <div style={{ textAlign: 'center', padding: '50px 0' }}>
                 <Text type="secondary">暂无发帖记录</Text>
                 <br />
-                <Button
-                  type="primary"
-                  icon={<BookOutlined />}
-                  as={Link}
-                  to="/posts/create"
-                  style={{ marginTop: 16 }}
-                >
-                  发布第一条帖子
-                </Button>
+                <Link to="/posts/create">
+                  <Button
+                    type="primary"
+                    icon={<BookOutlined />}
+                    style={{ marginTop: 16 }}
+                  >
+                    发布第一条帖子
+                  </Button>
+                </Link>
               </div>
             )}
           </Card>

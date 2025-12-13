@@ -88,4 +88,4 @@ class ReportProcessSerializer(serializers.ModelSerializer):
     def validate_action(self, value):
         """验证处理动作"""
         if value not in ['ignore', 'delete', 'warn']:
-            raise serializers.ValidationError("无效的处理
+            raise serializers.ValidationError("无效的处理动作")

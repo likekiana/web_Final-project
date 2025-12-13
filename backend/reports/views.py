@@ -174,4 +174,4 @@ class CommentReportCreateView(generics.CreateAPIView):
             "success": True,
             "message": "举报成功，我们将尽快处理",
             "data": ReportSerializer(report).data
-        },
+        }, status=status.HTTP_201_CREATED)

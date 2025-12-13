@@ -25,4 +25,5 @@ urlpatterns = [
     
     # 帖子评论相关路由
     path('posts/<int:post_id>/comments', PostCommentsView.as_view(), name='post-comments'),
-    path('posts/<int:post_id>/comments/create', PostCommentCreateView.as_view(), name='post
+    path('posts/<int:post_id>/comments/create', PostCommentCreateView.as_view(), name='post-comment-create')
+]

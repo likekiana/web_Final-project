@@ -2,6 +2,9 @@ import React, { useState } from 'react'
 import { Form, Input, Select, Button, Upload, Card, Typography, message } from 'antd'
 import { UploadOutlined, FileImageOutlined } from '@ant-design/icons'
 
+// 导入板块配置
+import categories from '../config/categories'
+
 const { Title } = Typography
 const { TextArea } = Input
 const { Option } = Select
@@ -12,16 +15,11 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
   const [previewVisible, setPreviewVisible] = useState(false)
   const [previewImage, setPreviewImage] = useState('')
 
-  // 板块选项
-  const categoryOptions = [
-    { value: 1, label: '学习学术区' },
-    { value: 2, label: '校园生活区' },
-    { value: 3, label: '二手交易区' },
-    { value: 4, label: '活动社交区' },
-    { value: 5, label: '实习就业区' },
-    { value: 6, label: '真情流露区' },
-    { value: 7, label: '广告专区' }
-  ]
+  // 板块选项（从配置文件生成）
+  const categoryOptions = categories.map(category => ({
+    value: category.id,
+    label: category.name
+  }))
 
   // 帖子类型选项
   const postTypeOptions = [

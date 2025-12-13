@@ -1,10 +1,24 @@
 import React from 'react'
 import { Layout, Menu, Button, Space } from 'antd'
-import { BookOutlined, HomeOutlined, ShoppingCartOutlined, TeamOutlined, HeartOutlined, LoginOutlined, UserAddOutlined, HomeTwoTone, BellOutlined, FileTextOutlined } from '@ant-design/icons'
+import { 
+  BookOutlined, HomeOutlined, ShoppingCartOutlined, TeamOutlined, 
+  HeartOutlined, LoginOutlined, UserAddOutlined, HomeTwoTone, 
+  BellOutlined, FileTextOutlined, UserOutlined 
+} from '@ant-design/icons'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 
 // 导入页面组件
 import Home from './pages/Home'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import CreatePost from './pages/CreatePost'
+import PostDetailPage from './pages/PostDetailPage'
+import AdminDashboard from './pages/AdminDashboard'
+import Profile from './pages/Profile'
+import EditPost from './pages/EditPost'
+
+// 导入配置
+import categories from './config/categories'
 
 const { Header, Content, Footer } = Layout
 
@@ -13,15 +27,25 @@ const AppHeader = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
+  // 图标映射
+  const iconMap = {
+    BookOutlined: <BookOutlined />,
+    HomeOutlined: <HomeOutlined />,
+    ShoppingCartOutlined: <ShoppingCartOutlined />,
+    TeamOutlined: <TeamOutlined />,
+    FileTextOutlined: <FileTextOutlined />,
+    HeartOutlined: <HeartOutlined />,
+    BellOutlined: <BellOutlined />
+  }
+
+  // 生成导航栏菜单项
   const menuItems = [
     { key: 'home', icon: <HomeTwoTone />, label: <Link to="/">首页</Link> },
-    { key: '1', icon: <BookOutlined />, label: '学习学术区' },
-    { key: '2', icon: <HomeOutlined />, label: '校园生活区' },
-    { key: '3', icon: <ShoppingCartOutlined />, label: '二手交易区' },
-    { key: '4', icon: <TeamOutlined />, label: '活动社交区' },
-    { key: '5', icon: <FileTextOutlined />, label: '实习就业区' },
-    { key: '6', icon: <HeartOutlined />, label: '真情流露区' },
-    { key: '7', icon: <BellOutlined />, label: '广告专区' }
+    ...categories.map(category => ({
+      key: category.id.toString(),
+      icon: iconMap[category.icon],
+      label: <Link to={`/?category=${category.id}`}>{category.name}</Link>
+    }))
   ]
 
   // 只有在非登录/注册页面显示完整导航栏
@@ -43,6 +67,9 @@ const AppHeader = () => {
             className="app-menu"
           />
           <Space>
+            <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/profile')} style={{ color: '#fff' }}>
+              个人中心
+            </Button>
             <Button type="link" icon={<LoginOutlined />} onClick={() => navigate('/login')} style={{ color: '#fff' }}>
               登录
             </Button>
@@ -71,6 +98,13 @@ function App() {
           <div className="app-container">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/posts/create" element={<CreatePost />} />
+              <Route path="/posts/:id" element={<PostDetailPage />} />
+              <Route path="/posts/:id/edit" element={<EditPost />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/admin/*" element={<AdminDashboard />} />
             </Routes>
           </div>
         </Content>

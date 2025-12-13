@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Card, List, Typography, Avatar, Form, Input, Button, Space, Pagination, message } from 'antd'
-import { LikeOutlined, CommentOutlined, DeleteOutlined } from '@ant-design/icons'
+import { LikeOutlined, CommentOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons'
 
 const { Title, Text } = Typography
 const { TextArea } = Input

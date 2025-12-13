@@ -1,18 +1,26 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, List, Typography, Avatar, Button, Tag, Space, Pagination, Select, Row, Col, Input, Form } from 'antd'
-import { LikeOutlined, CommentOutlined, EyeOutlined, ArrowUpOutlined, ArrowDownOutlined, SearchOutlined } from '@ant-design/icons'
+import { LikeOutlined, CommentOutlined, EyeOutlined, ArrowUpOutlined, ArrowDownOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
+
+// 导入板块配置
+import categories from '../config/categories'
 
 const { Title, Paragraph, Text } = Typography
 const { Option } = Select
 const { Search } = Input
 
-const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange }) => {
+const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange, category = null }) => {
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortOrder, setSortOrder] = useState('desc')
-  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState(category)
   const [keyword, setKeyword] = useState('')
   const [form] = Form.useForm()
+
+  // 当category属性变化时，更新selectedCategory状态
+  useEffect(() => {
+    setSelectedCategory(category)
+  }, [category])
 
   // 模拟帖子数据
   const mockPosts = [
@@ -178,24 +186,22 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
             </Col>
             
             {/* 板块筛选 */}
-            <Col xs={24} sm={12} md={6}>
-              <Text strong>板块筛选：</Text>
-              <Select
-                placeholder="选择板块"
-                style={{ width: 200, marginLeft: 8 }}
-                onChange={setSelectedCategory}
-                allowClear
-                value={selectedCategory}
-              >
-                <Option value={1}>学习学术区</Option>
-                <Option value={2}>校园生活区</Option>
-                <Option value={3}>二手交易区</Option>
-                <Option value={4}>活动社交区</Option>
-                <Option value={5}>实习就业区</Option>
-                <Option value={6}>真情流露区</Option>
-                <Option value={7}>广告专区</Option>
-              </Select>
-            </Col>
+              <Col xs={24} sm={12} md={6}>
+                <Text strong>板块筛选：</Text>
+                <Select
+                  placeholder="选择板块"
+                  style={{ width: 200, marginLeft: 8 }}
+                  onChange={setSelectedCategory}
+                  allowClear
+                  value={selectedCategory}
+                >
+                  {categories.map(category => (
+                    <Option key={category.id} value={category.id}>
+                      {category.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
             
             {/* 排序方式 */}
             <Col xs={24} sm={12} md={6}>

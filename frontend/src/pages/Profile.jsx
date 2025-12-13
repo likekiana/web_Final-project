@@ -1,161 +1,146 @@
-import React, { useState } from 'react'
-import { Card, Typography, Avatar, Button, Row, Col, Form, Input, Upload, message } from 'antd'
-import { UserOutlined, CameraOutlined, LogoutOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import React from 'react'
+import { Card, Typography, Row, Col, Button, List, Avatar, Space } from 'antd'
+import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined } from '@ant-design/icons'
+import { useNavigate, Link } from 'react-router-dom'
 
-const { Title, Paragraph } = Typography
-const { TextArea } = Input
+const { Title, Paragraph, Text } = Typography
 
 const Profile = () => {
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
 
   // 模拟用户数据
-  const userData = {
+  const user = {
     id: 1,
     username: 'testuser',
     email: 'test@example.edu.cn',
     avatar: null,
-    bio: '这是我的个人简介，我是一名大学生。',
-    role: 'student',
-    reputation: 100,
-    postCount: 5,
-    createdAt: '2023-01-01'
+    bio: '热爱学习和分享的大学生',
+    createdAt: '2023-09-01',
+    postsCount: 10,
+    commentsCount: 20,
+    likesCount: 50
   }
+
+  // 模拟帖子数据
+  const posts = [
+    {
+      id: 1,
+      title: '如何高效准备期末考试？',
+      content: '马上就要期末考试了，大家有什么好的复习方法分享吗？',
+      createdAt: '2023-12-10T15:45:00Z',
+      likesCount: 5,
+      commentsCount: 3
+    },
+    {
+      id: 2,
+      title: '推荐一本好书《高效能人士的七个习惯》',
+      content: '最近读了一本好书，推荐给大家...',
+      createdAt: '2023-12-08T10:30:00Z',
+      likesCount: 8,
+      commentsCount: 5
+    }
+  ]
 
   const handleLogout = () => {
-    message.success('退出登录成功')
+    // 实现退出登录逻辑
+    localStorage.removeItem('token')
     navigate('/login')
-  }
-
-  const handleSave = (values) => {
-    setLoading(true)
-    // 模拟保存请求
-    setTimeout(() => {
-      message.success('个人资料更新成功')
-      setLoading(false)
-    }, 1000)
   }
 
   return (
     <div>
-      <Title level={2}>个人中心</Title>
+      <Title level={2}>个人资料</Title>
       
       <Row gutter={[24, 24]}>
-        {/* 左侧个人信息卡片 */}
+        {/* 左侧用户信息卡片 */}
         <Col xs={24} md={8}>
-          <Card title="个人信息" hoverable>
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <Card title="用户信息" hoverable>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <Avatar
-                size={120}
+                size={100}
                 icon={<UserOutlined />}
-                src={userData.avatar}
+                src={user.avatar}
                 style={{ marginBottom: 16 }}
               />
-              <Title level={4} style={{ margin: 0 }}>{userData.username}</Title>
-              <Paragraph type="secondary">{userData.email}</Paragraph>
-              <Paragraph type="secondary">注册时间：{userData.createdAt}</Paragraph>
+              <div>
+                <Title level={3} style={{ margin: 0 }}>{user.username}</Title>
+                <Text type="secondary">{user.email}</Text>
+              </div>
             </div>
             
-            <div style={{ marginTop: 20 }}>
-              <Row gutter={[16, 16]}>
-                <Col span={12}>
-                  <div style={{ textAlign: 'center' }}>
-                    <Title level={3}>{userData.postCount}</Title>
-                    <Paragraph type="secondary">发帖数</Paragraph>
-                  </div>
-                </Col>
-                <Col span={12}>
-                  <div style={{ textAlign: 'center' }}>
-                    <Title level={3}>{userData.reputation}</Title>
-                    <Paragraph type="secondary">信誉值</Paragraph>
-                  </div>
-                </Col>
-              </Row>
-            </div>
+            <Paragraph style={{ marginBottom: 24 }}>{user.bio}</Paragraph>
             
-            <Button
-              type="danger"
-              icon={<LogoutOutlined />}
-              block
-              onClick={handleLogout}
-              style={{ marginTop: 20 }}
-            >
-              退出登录
-            </Button>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Text>注册时间：</Text>
+                <Text type="secondary">{new Date(user.createdAt).toLocaleDateString()}</Text>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Text>发帖数：</Text>
+                <Text strong>{user.postsCount}</Text>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Text>评论数：</Text>
+                <Text strong>{user.commentsCount}</Text>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Text>获赞数：</Text>
+                <Text strong>{user.likesCount}</Text>
+              </div>
+            </Space>
+            
+            <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+              <Button type="primary" icon={<EditOutlined />} block>
+                编辑资料
+              </Button>
+              <Button danger icon={<LogoutOutlined />} block onClick={handleLogout}>
+                退出登录
+              </Button>
+            </div>
           </Card>
         </Col>
         
-        {/* 右侧个人资料编辑 */}
+        {/* 右侧帖子列表 */}
         <Col xs={24} md={16}>
-          <Card title="编辑个人资料" hoverable>
-            <Form
-              layout="vertical"
-              initialValues={{ username: userData.username, bio: userData.bio }}
-              onFinish={handleSave}
-            >
-              <Form.Item
-                name="username"
-                rules={[
-                  { required: true, message: '请输入用户名!' },
-                  { min: 2, message: '用户名长度不能少于2个字符!' },
-                  { max: 20, message: '用户名长度不能超过20个字符!' }
-                ]}
-                label="用户名"
-              >
-                <Input placeholder="请输入用户名" />
-              </Form.Item>
-              
-              <Form.Item
-                name="email"
-                rules={[
-                  { required: true, message: '请输入邮箱!' },
-                  { type: 'email', message: '请输入有效的邮箱地址!' }
-                ]}
-                label="邮箱"
-              >
-                <Input placeholder="请输入邮箱" disabled value={userData.email} />
-              </Form.Item>
-              
-              <Form.Item
-                name="bio"
-                rules={[
-                  { max: 200, message: '个人简介不能超过200个字符!' }
-                ]}
-                label="个人简介"
-              >
-                <TextArea rows={4} placeholder="请输入个人简介" />
-              </Form.Item>
-              
-              <Form.Item
-                name="avatar"
-                label="头像"
-              >
-                <Upload
-                  action="https://run.mocky.io/v3/435e224c-44fb-4773-9faf-380c5e6a2188"
-                  listType="picture-circle"
-                  showUploadList={false}
+          <Card title="我的发帖" hoverable>
+            <List
+              grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
+              dataSource={posts}
+              renderItem={(post) => (
+                <List.Item
+                  actions={[
+                    <Space size="middle">
+                      <Text type="secondary">
+                        <BookOutlined style={{ marginRight: 4 }} />
+                        {post.likesCount} 点赞
+                      </Text>
+                      <Text type="secondary">
+                        <CommentOutlined style={{ marginRight: 4 }} />
+                        {post.commentsCount} 评论
+                      </Text>
+                    </Space>
+                  ]}
+                  style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
                 >
-                  <Button icon={<CameraOutlined />}>更换头像</Button>
-                </Upload>
-              </Form.Item>
-              
-              <Form.Item>
-                <Button type="primary" htmlType="submit" loading={loading}>
-                  保存修改
-                </Button>
-              </Form.Item>
-            </Form>
+                  <List.Item.Meta
+                    title={
+                      <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                    }
+                    description={
+                      <div>
+                        <Paragraph ellipsis={{ rows: 2 }}>{post.content}</Paragraph>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {new Date(post.createdAt).toLocaleString()}
+                        </Text>
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
           </Card>
         </Col>
       </Row>
-      
-      {/* 我的发帖历史 */}
-      <Card title="我的发帖历史" hoverable style={{ marginTop: 24 }}>
-        <Paragraph type="secondary" style={{ textAlign: 'center', padding: '20px 0' }}>
-          您还没有发帖记录，去发布您的第一条帖子吧！
-        </Paragraph>
-      </Card>
     </div>
   )
 }

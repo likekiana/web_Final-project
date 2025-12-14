@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Typography, Button, Space, Tag, Input, Select, Modal, message, Tabs } from 'antd'
-import { SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, PushpinOutlined, PushpinTwoTone } from '@ant-design/icons'
 import { adminAPI, commentAPI } from '../../services/api'
 
 const { Title } = Typography
 const { Search } = Input
 const { Option } = Select
-const { TabPane } = Tabs
 
 const ContentManagement = () => {
   const [loading, setLoading] = useState(false)
@@ -171,6 +170,15 @@ const ContentManagement = () => {
           <Button type="primary" icon={<EditOutlined />} size="small">
             编辑
           </Button>
+          {record.is_sticky ? (
+            <Button type="default" icon={<PushpinTwoTone />} size="small" onClick={() => handleUnpinPost(record.id)}>
+              取消置顶
+            </Button>
+          ) : (
+            <Button type="success" icon={<PushpinOutlined />} size="small" onClick={() => handlePinPost(record.id)}>
+              置顶
+            </Button>
+          )}
           <Button type="danger" icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record.id, 'post')}>
             删除
           </Button>
@@ -276,6 +284,40 @@ const ContentManagement = () => {
     })
   }
 
+  // 置顶帖子
+  const handlePinPost = async (id) => {
+    try {
+      setLoading(true)
+      const response = await adminAPI.pinPost(id)
+      if (response.success) {
+        message.success('帖子已置顶')
+        fetchPosts() // 重新获取帖子列表
+      }
+    } catch (error) {
+      console.error('Failed to pin post:', error)
+      message.error('帖子置顶失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 取消帖子置顶
+  const handleUnpinPost = async (id) => {
+    try {
+      setLoading(true)
+      const response = await adminAPI.unpinPost(id)
+      if (response.success) {
+        message.success('帖子已取消置顶')
+        fetchPosts() // 重新获取帖子列表
+      }
+    } catch (error) {
+      console.error('Failed to unpin post:', error)
+      message.error('取消帖子置顶失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleTabChange = (key) => {
     setSelectedTab(key)
   }
@@ -300,26 +342,38 @@ const ContentManagement = () => {
       </Card>
 
       {/* 标签页切换帖子和评论 */}
-      <Tabs activeKey={selectedTab} onChange={handleTabChange}>
-        <TabPane tab="帖子管理" key="posts">
-          <Table
-            columns={postColumns}
-            dataSource={filteredPosts}
-            rowKey="id"
-            loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
-        </TabPane>
-        <TabPane tab="评论管理" key="comments">
-          <Table
-            columns={commentColumns}
-            dataSource={filteredComments}
-            rowKey="id"
-            loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
-        </TabPane>
-      </Tabs>
+      <Tabs
+        activeKey={selectedTab}
+        onChange={handleTabChange}
+        items={[
+          {
+            key: 'posts',
+            label: '帖子管理',
+            children: (
+              <Table
+                columns={postColumns}
+                dataSource={filteredPosts}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            ),
+          },
+          {
+            key: 'comments',
+            label: '评论管理',
+            children: (
+              <Table
+                columns={commentColumns}
+                dataSource={filteredComments}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

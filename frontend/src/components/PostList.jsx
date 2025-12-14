@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Card, List, Typography, Avatar, Button, Tag, Space, Pagination, Select, Row, Col, Input, Form } from 'antd'
-import { LikeOutlined, CommentOutlined, EyeOutlined, ArrowUpOutlined, ArrowDownOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
+import { Card, List, Typography, Avatar, Button, Tag, Space, Pagination, Select, Row, Col, Input, Form, message } from 'antd'
+import { LikeOutlined, CommentOutlined, EyeOutlined, ArrowUpOutlined, ArrowDownOutlined, SearchOutlined, UserOutlined, StarOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 
 // 导入API服务
-import { categoryAPI } from '../services/api'
+import { categoryAPI, favoriteAPI } from '../services/api'
 
 const { Title, Paragraph, Text } = Typography
 const { Option } = Select
@@ -17,6 +17,10 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
   const [keyword, setKeyword] = useState('')
   const [form] = Form.useForm()
   const [categories, setCategories] = useState([])
+  // 收藏状态管理，key为帖子id，value为是否收藏
+  const [favoritedPosts, setFavoritedPosts] = useState({})
+  // 正在收藏/取消收藏的帖子id集合
+  const [favoritingPosts, setFavoritingPosts] = useState(new Set())
 
   // 当category属性变化时，更新selectedCategory状态
   useEffect(() => {
@@ -95,6 +99,65 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
   const handleSearch = (value) => {
     setKeyword(value)
   }
+
+  // 检查帖子收藏状态
+  const checkFavoriteStatus = async (postId) => {
+    if (!localStorage.getItem('token')) return false
+    
+    try {
+      const response = await favoriteAPI.checkFavorite(postId)
+      if (response.success) {
+        setFavoritedPosts(prev => ({
+          ...prev,
+          [postId]: response.data.is_favorited
+        }))
+        return response.data.is_favorited
+      }
+    } catch (error) {
+      console.error('Failed to check favorite status:', error)
+    }
+    return false
+  }
+
+  // 处理收藏/取消收藏
+  const handleToggleFavorite = async (postId) => {
+    if (!localStorage.getItem('token')) {
+      message.error('请先登录')
+      return
+    }
+    
+    if (favoritingPosts.has(postId)) return
+    
+    setFavoritingPosts(prev => new Set(prev).add(postId))
+    try {
+      const response = await favoriteAPI.toggleFavorite(postId)
+      if (response.success) {
+        setFavoritedPosts(prev => ({
+          ...prev,
+          [postId]: response.data.is_favorited
+        }))
+        message.success(response.data.is_favorited ? '收藏成功' : '取消收藏成功')
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+      message.error('操作失败，请重试')
+    } finally {
+      setFavoritingPosts(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(postId)
+        return newSet
+      })
+    }
+  }
+
+  // 当帖子列表变化时，检查每个帖子的收藏状态
+  useEffect(() => {
+    posts.forEach(post => {
+      if (post.id && !(post.id in favoritedPosts)) {
+        checkFavoriteStatus(post.id)
+      }
+    })
+  }, [posts])
 
   const handleReset = () => {
     setKeyword('')
@@ -235,6 +298,16 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                     <LikeOutlined />
                     <Text type="secondary">{post.likes_count}</Text>
                   </Space>
+                  <Button 
+                    type={favoritedPosts[post.id] ? "primary" : "default"} 
+                    icon={<StarOutlined />}
+                    size="small"
+                    loading={favoritingPosts.has(post.id)}
+                    onClick={() => handleToggleFavorite(post.id)}
+                    style={{ padding: '0 8px' }}
+                  >
+                    {favoritedPosts[post.id] ? '已收藏' : '收藏'}
+                  </Button>
                 </Space>
               </div>
             </Card>

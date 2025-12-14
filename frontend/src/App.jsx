@@ -132,7 +132,12 @@ const AppHeader = () => {
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Layout className="app-layout">
         <AppHeader />
         <Content className="app-content">
@@ -145,7 +150,10 @@ function App() {
               <Route path="/posts/:id" element={<PostDetailPage />} />
               <Route path="/posts/:id/edit" element={<EditPost />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/admin/*" element={<AdminDashboard />} />
+              <Route path="/admin">
+                <Route index element={<AdminDashboard />} />
+                <Route path="*" element={<AdminDashboard />} />
+              </Route>
             </Routes>
           </div>
         </Content>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input, Upload, Tabs, Empty } from 'antd'
-import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined, UploadOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons'
+import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined, UploadOutlined, EyeOutlined, DeleteOutlined, StarOutlined } from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
-import { authAPI, userAPI, historyAPI } from '../services/api'
+import { authAPI, userAPI, historyAPI, favoriteAPI } from '../services/api'
 
 const { Title, Paragraph, Text } = Typography
 
@@ -11,8 +11,10 @@ const Profile = () => {
   const [user, setUser] = useState(null)
   const [posts, setPosts] = useState([])
   const [browsingHistory, setBrowsingHistory] = useState([])
+  const [favorites, setFavorites] = useState([])
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [favoritesLoading, setFavoritesLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [form] = Form.useForm()
   const [saveLoading, setSaveLoading] = useState(false)
@@ -79,10 +81,33 @@ const Profile = () => {
     }
   }
 
-  // 当选项卡切换到浏览历史时获取数据
+  // 获取收藏夹列表
+  const fetchFavorites = async () => {
+    setFavoritesLoading(true)
+    try {
+      const response = await favoriteAPI.getFavorites()
+      if (response.success) {
+        // 处理分页情况：如果返回的是分页响应，使用 results 字段；否则直接使用 data
+        const favoritesData = response.data?.results || response.data || []
+        setFavorites(favoritesData)
+      } else if (response.results) {
+        // 处理 DRF 标准分页响应（success 字段可能不存在）
+        setFavorites(response.results)
+      }
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error)
+      message.error('获取收藏夹失败')
+    } finally {
+      setFavoritesLoading(false)
+    }
+  }
+
+  // 当选项卡切换时获取对应数据
   useEffect(() => {
     if (activeTab === 'history') {
       fetchBrowsingHistory()
+    } else if (activeTab === 'favorites') {
+      fetchFavorites()
     }
   }, [activeTab])
 
@@ -413,6 +438,69 @@ const Profile = () => {
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                           description={
                             <span>暂无浏览历史记录</span>
+                          }
+                        />
+                      )}
+                    </Spin>
+                  </Card>
+                ),
+              },
+              {
+                key: 'favorites',
+                label: '我的收藏',
+                children: (
+                  <Card hoverable>
+                    <Spin spinning={favoritesLoading}>
+                      {favorites.length > 0 ? (
+                        <List
+                          grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
+                          dataSource={favorites}
+                          renderItem={(favorite) => {
+                            const post = favorite.post;
+                            return (
+                              <List.Item
+                                actions={[
+                                  <Space size="middle">
+                                    <Text type="secondary">
+                                      <BookOutlined style={{ marginRight: 4 }} />
+                                      {post.likes_count || 0} 点赞
+                                    </Text>
+                                    <Text type="secondary">
+                                      <CommentOutlined style={{ marginRight: 4 }} />
+                                      {post.comment_count || 0} 评论
+                                    </Text>
+                                  </Space>
+                                ]}
+                                style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
+                              >
+                                <List.Item.Meta
+                                  title={
+                                    <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                                  }
+                                  description={
+                                    <div>
+                                      <Paragraph ellipsis={{ rows: 2 }}>{post.content}</Paragraph>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          {new Date(post.created_at).toLocaleString()}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          <StarOutlined style={{ marginRight: 4, color: '#ffd700' }} />
+                                          {new Date(favorite.created_at).toLocaleString()}
+                                        </Text>
+                                      </div>
+                                    </div>
+                                  }
+                                />
+                              </List.Item>
+                            );
+                          }}
+                        />
+                      ) : (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={
+                            <span>暂无收藏记录</span>
                           }
                         />
                       )}

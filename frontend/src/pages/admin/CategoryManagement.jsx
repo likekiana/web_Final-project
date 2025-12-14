@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Typography, Button, Space, Tag, Input, InputNumber, Form, Modal, message, Select } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { categoryAPI } from '../../services/api'
+import { adminAPI } from '../../services/api'
 
 const { Title } = Typography
 const { Search } = Input
@@ -20,7 +20,7 @@ const CategoryManagement = () => {
   const fetchCategories = async () => {
     setCategoriesLoading(true)
     try {
-      const response = await categoryAPI.getCategories()
+      const response = await adminAPI.getCategories()
       if (response.success) {
         setCategories(response.data || [])
       }
@@ -133,7 +133,7 @@ const CategoryManagement = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          const response = await categoryAPI.deleteCategory(categoryId)
+          const response = await adminAPI.deleteCategory(categoryId)
           if (response.success) {
             message.success('板块删除成功')
             // 重新获取板块列表
@@ -153,9 +153,9 @@ const CategoryManagement = () => {
       try {
         let response
         if (isEditMode) {
-          response = await categoryAPI.updateCategory(selectedCategory.id, values)
+          response = await adminAPI.updateCategory(selectedCategory.id, values)
         } else {
-          response = await categoryAPI.createCategory(values)
+          response = await adminAPI.createCategory(values)
         }
         
         if (response.success) {

@@ -1,17 +1,57 @@
-import React from 'react'
-import { Card, Row, Col, Statistic, Typography } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Card, Row, Col, Statistic, Typography, Spin } from 'antd'
 import { UserOutlined, FileTextOutlined, TagOutlined, SettingOutlined } from '@ant-design/icons'
+import { adminAPI } from '../../services/api'
 
 const { Title } = Typography
 
 const AdminHome = () => {
-  // 模拟统计数据
-  const stats = [
-    { title: '总用户数', value: 1000, icon: <UserOutlined />, color: '#1890ff' },
-    { title: '总帖子数', value: 5000, icon: <FileTextOutlined />, color: '#52c41a' },
-    { title: '总板块数', value: 7, icon: <TagOutlined />, color: '#faad14' },
-    { title: '总广告数', value: 100, icon: <SettingOutlined />, color: '#f5222d' }
-  ]
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState([
+    { title: '总用户数', value: 0, icon: <UserOutlined />, color: '#1890ff' },
+    { title: '总帖子数', value: 0, icon: <FileTextOutlined />, color: '#52c41a' },
+    { title: '总板块数', value: 0, icon: <TagOutlined />, color: '#faad14' },
+    { title: '总广告数', value: 0, icon: <SettingOutlined />, color: '#f5222d' }
+  ])
+  const [pendingItems, setPendingItems] = useState([])
+  const [recentActivities, setRecentActivities] = useState([])
+
+  // 从API获取统计数据
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true)
+      try {
+        const response = await adminAPI.getDashboardStats()
+        if (response.success) {
+          const data = response.data
+          
+          // 更新统计数据
+          setStats([
+            { title: '总用户数', value: data.stats.total_users, icon: <UserOutlined />, color: '#1890ff' },
+            { title: '总帖子数', value: data.stats.total_posts, icon: <FileTextOutlined />, color: '#52c41a' },
+            { title: '总板块数', value: data.stats.total_categories, icon: <TagOutlined />, color: '#faad14' },
+            { title: '总广告数', value: data.stats.total_ads, icon: <SettingOutlined />, color: '#f5222d' }
+          ])
+          
+          // 更新待处理事项
+          setPendingItems([
+            { title: '待审核帖子', value: data.pending_items.pending_posts },
+            { title: '待处理举报', value: data.pending_items.pending_reports },
+            { title: '待审核广告', value: data.pending_items.pending_ads }
+          ])
+          
+          // 更新最近动态
+          setRecentActivities(data.recent_activities)
+        }
+      } catch (error) {
+        console.error('获取统计数据失败:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
 
   return (
     <div>
@@ -21,12 +61,14 @@ const AdminHome = () => {
         {stats.map((stat, index) => (
           <Col xs={24} sm={12} md={6} key={index}>
             <Card hoverable>
-              <Statistic
-                title={stat.title}
-                value={stat.value}
-                prefix={stat.icon}
-                valueStyle={{ color: stat.color }}
-              />
+              <Spin spinning={loading}>
+                <Statistic
+                  title={stat.title}
+                  value={stat.value}
+                  prefix={stat.icon}
+                  valueStyle={{ color: stat.color }}
+                />
+              </Spin>
             </Card>
           </Col>
         ))}
@@ -35,24 +77,29 @@ const AdminHome = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <Card title="最近动态" hoverable>
-            <div style={{ padding: 16 }}>
-              <p>• 用户 testuser 发布了新帖子</p>
-              <p>• 用户 user2 被管理员封禁</p>
-              <p>• 新增板块 "广告专区"</p>
-              <p>• 管理员删除了违规帖子</p>
-              <p>• 用户 user3 更新了个人资料</p>
-            </div>
+            <Spin spinning={loading}>
+              <div style={{ padding: 16 }}>
+                {recentActivities.length > 0 ? (
+                  recentActivities.map((activity, index) => (
+                    <p key={index}>• {activity}</p>
+                  ))
+                ) : (
+                  <p>暂无最近动态</p>
+                )}
+              </div>
+            </Spin>
           </Card>
         </Col>
         
         <Col xs={24} lg={12}>
           <Card title="待处理事项" hoverable>
-            <div style={{ padding: 16 }}>
-              <p>• 待审核帖子：3</p>
-              <p>• 待处理举报：5</p>
-              <p>• 待审核广告：2</p>
-              <p>• 待处理用户申诉：1</p>
-            </div>
+            <Spin spinning={loading}>
+              <div style={{ padding: 16 }}>
+                {pendingItems.map((item, index) => (
+                  <p key={index}>• {item.title}：{item.value}</p>
+                ))}
+              </div>
+            </Spin>
           </Card>
         </Col>
       </Row>

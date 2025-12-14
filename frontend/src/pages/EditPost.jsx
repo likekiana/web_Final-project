@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { message } from 'antd'
 import PostForm from '../components/PostForm'
+import { postAPI } from '../services/api'
 
 const EditPost = () => {
   const { id } = useParams()
@@ -9,26 +11,28 @@ const EditPost = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // 模拟获取帖子数据
+    // 从API获取帖子数据
     const fetchPost = async () => {
       setLoading(true)
       try {
-        // 这里应该调用API获取帖子数据
-        // 模拟API请求
-        setTimeout(() => {
-          const mockPost = {
-            id: id,
-            title: '如何高效准备期末考试？',
-            categoryId: 1,
-            type: 'normal',
-            content: '马上就要期末考试了，大家有什么好的复习方法分享吗？我最近在准备期末考试，感觉时间不够用，有些课程还没有开始复习。希望大家能分享一些高效的复习方法，比如如何制定复习计划，如何高效记忆知识点，如何处理压力等等。谢谢大家！',
-            images: []
-          }
-          setInitialValues(mockPost)
-          setLoading(false)
-        }, 1000)
+        const response = await postAPI.getPostDetail(id)
+        if (response.success) {
+          const postData = response.data
+          setInitialValues({
+            id: postData.id,
+            title: postData.title,
+            categoryId: postData.category_id,
+            type: postData.type,
+            content: postData.content,
+            images: postData.images || []
+          })
+        } else {
+          message.error(response.message || '获取帖子失败')
+        }
       } catch (error) {
         console.error('Failed to fetch post:', error)
+        message.error('获取帖子失败')
+      } finally {
         setLoading(false)
       }
     }
@@ -36,10 +40,20 @@ const EditPost = () => {
     fetchPost()
   }, [id])
 
-  const handleSubmit = (values) => {
-    console.log('Post updated:', values)
-    // 提交成功后跳转到帖子详情页
-    navigate(`/posts/${id}`)
+  const handleSubmit = async (values) => {
+    try {
+      const response = await postAPI.updatePost(id, values)
+      if (response.success) {
+        message.success('帖子更新成功')
+        // 提交成功后跳转到帖子详情页
+        navigate(`/posts/${id}`)
+      } else {
+        message.error(response.message || '更新失败')
+      }
+    } catch (error) {
+      console.error('Failed to update post:', error)
+      message.error('更新帖子失败')
+    }
   }
 
   if (loading) {

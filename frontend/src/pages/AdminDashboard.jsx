@@ -1,6 +1,6 @@
 import React from 'react'
 import { Layout, Menu, Typography } from 'antd'
-import { UserOutlined, FileTextOutlined, TagOutlined, SettingOutlined, HomeOutlined } from '@ant-design/icons'
+import { UserOutlined, FileTextOutlined, TagOutlined, SettingOutlined, HomeOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 
 // 导入管理员子页面
@@ -9,6 +9,7 @@ import UserManagement from './admin/UserManagement'
 import ContentManagement from './admin/ContentManagement'
 import CategoryManagement from './admin/CategoryManagement'
 import AdManagement from './admin/AdManagement'
+import ReportManagement from './admin/ReportManagement'
 
 const { Header, Content, Sider } = Layout
 const { Title } = Typography
@@ -22,7 +23,8 @@ const AdminDashboard = () => {
     { key: '/admin/users', icon: <UserOutlined />, label: <Link to="/admin/users">用户管理</Link> },
     { key: '/admin/content', icon: <FileTextOutlined />, label: <Link to="/admin/content">内容管理</Link> },
     { key: '/admin/categories', icon: <TagOutlined />, label: <Link to="/admin/categories">板块管理</Link> },
-    { key: '/admin/ads', icon: <SettingOutlined />, label: <Link to="/admin/ads">广告管理</Link> }
+    { key: '/admin/ads', icon: <SettingOutlined />, label: <Link to="/admin/ads">广告管理</Link> },
+    { key: '/admin/reports', icon: <ExclamationCircleOutlined />, label: <Link to="/admin/reports">举报管理</Link> }
   ]
 
   // 查找当前激活的菜单项
@@ -66,12 +68,13 @@ const AdminDashboard = () => {
         <Content style={{ margin: '16px 24px 24px' }}>
           <div style={{ padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>
             <Routes>
-              <Route path="" element={<AdminHome />} />
-              <Route path="/users" element={<UserManagement />} />
-              <Route path="/content" element={<ContentManagement />} />
-              <Route path="/categories" element={<CategoryManagement />} />
-              <Route path="/ads" element={<AdManagement />} />
-            </Routes>
+            <Route path="" element={<AdminHome />} />
+            <Route path="/users" element={<UserManagement />} />
+            <Route path="/content" element={<ContentManagement />} />
+            <Route path="/categories" element={<CategoryManagement />} />
+            <Route path="/ads" element={<AdManagement />} />
+            <Route path="/reports" element={<ReportManagement />} />
+          </Routes>
           </div>
         </Content>
       </Layout>

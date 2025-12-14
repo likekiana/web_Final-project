@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Table, Typography, Button, Space, Tag, Input, Select, Modal, message, Switch } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { adminAPI } from '../../services/api'
 
 const { Title } = Typography
 const { Search } = Input
@@ -11,23 +12,35 @@ const AdManagement = () => {
   const [searchText, setSearchText] = useState('')
   const [adStatus, setAdStatus] = useState('')
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [ads, setAds] = useState([])
 
-  // 模拟广告数据
-  const mockAds = [
-    { id: 1, title: '校园超市优惠活动', content: '校园超市推出新学期优惠活动，全场商品8折起，欢迎同学们前来选购！', merchant: '校园超市', status: 'active', startDate: '2023-12-01', endDate: '2023-12-31', isTop: true },
-    { id: 2, title: '健身房会员特惠', content: '学校附近健身房推出学生特惠，办理年卡享受6折优惠，还有免费体验课！', merchant: '健身俱乐部', status: 'active', startDate: '2023-12-05', endDate: '2024-01-15', isTop: false },
-    { id: 3, title: '考研辅导班招生', content: '知名考研辅导机构在我校招生，提供专业的考研辅导课程，现在报名享受早鸟优惠！', merchant: '考研辅导中心', status: 'pending', startDate: '2023-12-10', endDate: '2024-03-31', isTop: false },
-    { id: 4, title: '二手书店开业', content: '学校门口新开二手书店，收购和出售各类二手书籍，价格优惠！', merchant: '二手书店', status: 'active', startDate: '2023-12-15', endDate: '2024-02-28', isTop: false }
-  ]
+  // 从API获取广告数据
+  useEffect(() => {
+    fetchAds()
+  }, [searchText, adStatus])
 
-  // 筛选广告
-  const filteredAds = mockAds.filter(ad => {
-    const matchesSearch = ad.title.toLowerCase().includes(searchText.toLowerCase()) || 
-                         ad.content.toLowerCase().includes(searchText.toLowerCase()) ||
-                         ad.merchant.toLowerCase().includes(searchText.toLowerCase())
-    const matchesStatus = !adStatus || ad.status === adStatus
-    return matchesSearch && matchesStatus
-  })
+  const fetchAds = async () => {
+    setLoading(true)
+    try {
+      const response = await adminAPI.getAds({
+        search: searchText,
+        status: adStatus
+      })
+      if (response.success) {
+        setAds(response.data.advertisements || [])
+      } else {
+        message.error(response.message || '获取广告列表失败')
+      }
+    } catch (error) {
+      console.error('Failed to fetch ads:', error)
+      message.error('获取广告列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 广告数据已经通过API筛选，这里不再需要本地筛选
+  const filteredAds = ads
 
   // 广告状态标签配置
   const getAdStatusTag = (status) => {
@@ -185,10 +198,10 @@ const AdManagement = () => {
             onChange={setAdStatus}
             style={{ width: 150 }}
           >
-            <Option value="active">活跃</Option>
-            <Option value="pending">待审核</Option>
-            <Option value="expired">已过期</Option>
-            <Option value="rejected">已拒绝</Option>
+            <Select.Option value="active">活跃</Select.Option>
+            <Select.Option value="pending">待审核</Select.Option>
+            <Select.Option value="expired">已过期</Select.Option>
+            <Select.Option value="rejected">已拒绝</Select.Option>
           </Select>
         </Space>
       </Card>

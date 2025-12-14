@@ -139,9 +139,9 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                   value={selectedCategory}
                 >
                   {categories.map(category => (
-                    <Option key={category.id} value={category.id}>
+                    <Select.Option key={category.id} value={category.id}>
                       {category.name}
-                    </Option>
+                    </Select.Option>
                   ))}
                 </Select>
               </Col>

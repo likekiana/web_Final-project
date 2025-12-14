@@ -36,6 +36,7 @@ class AdvertisementSerializer(serializers.ModelSerializer):
         if len(value) < 10:
             raise serializers.ValidationError("广告内容长度不能少于10个字符")
         return value
+        return value
 
 
 class AdvertisementCreateSerializer(serializers.ModelSerializer):

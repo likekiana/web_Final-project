@@ -27,50 +27,74 @@ class AdvertisementListView(generics.ListAPIView):
         """获取过滤后的广告列表"""
         queryset = super().get_queryset()
         
-        # 只显示已发布的广告
-        queryset = queryset.filter(status='active')
-        
-        # 只显示当前有效的广告（开始时间<=现在<=结束时间）
-        from django.utils import timezone
-        now = timezone.now()
-        queryset = queryset.filter(
-            (Q(start_date__isnull=True) | Q(start_date__lte=now)) & 
-            (Q(end_date__isnull=True) | Q(end_date__gte=now))
-        )
+        # 检查请求路径，判断是否为管理员访问
+        if 'admin' not in self.request.path:
+            # 普通用户只显示已发布的广告
+            queryset = queryset.filter(status='active')
+            
+            # 普通用户只显示当前有效的广告（开始时间<=现在<=结束时间）
+            from django.utils import timezone
+            now = timezone.now()
+            queryset = queryset.filter(
+                (Q(start_date__isnull=True) | Q(start_date__lte=now)) & 
+                (Q(end_date__isnull=True) | Q(end_date__gte=now))
+            )
+        else:
+            # 管理员可以查看所有广告，支持搜索和状态筛选
+            # 搜索关键词
+            search = self.request.query_params.get('search', None)
+            if search:
+                queryset = queryset.filter(
+                    Q(title__icontains=search) | 
+                    Q(content__icontains=search) | 
+                    Q(merchant__username__icontains=search)
+                )
+            
+            # 状态筛选
+            status = self.request.query_params.get('status', None)
+            if status:
+                queryset = queryset.filter(status=status)
         
         return queryset
     
     def list(self, request, *args, **kwargs):
         """获取广告列表"""
         queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response({
-                "success": True,
-                "message": "获取成功",
-                "data": {
-                    "advertisements": serializer.data,
-                    "pagination": {
-                        "currentPage": self.request.query_params.get('page', 1),
-                        "totalPages": self.paginator.num_pages,
-                        "totalItems": self.paginator.count,
-                        "pageSize": self.paginator.per_page
-                    }
-                }
-            })
         
-        serializer = self.get_serializer(queryset, many=True)
+        # 处理分页
+        page_size = 10
+        page_number = request.query_params.get('page', 1)
+        
+        try:
+            page_number = int(page_number)
+            if page_number < 1:
+                page_number = 1
+        except ValueError:
+            page_number = 1
+        
+        # 计算偏移量
+        offset = (page_number - 1) * page_size
+        
+        # 获取当前页数据
+        page_queryset = queryset[offset:offset + page_size]
+        
+        # 序列化数据
+        serializer = self.get_serializer(page_queryset, many=True)
+        
+        # 计算总页数
+        total_items = queryset.count()
+        total_pages = (total_items + page_size - 1) // page_size
+        
         return Response({
             "success": True,
             "message": "获取成功",
             "data": {
                 "advertisements": serializer.data,
                 "pagination": {
-                    "currentPage": 1,
-                    "totalPages": 1,
-                    "totalItems": len(serializer.data),
-                    "pageSize": len(serializer.data)
+                    "currentPage": page_number,
+                    "totalPages": total_pages,
+                    "totalItems": total_items,
+                    "pageSize": page_size
                 }
             }
         })

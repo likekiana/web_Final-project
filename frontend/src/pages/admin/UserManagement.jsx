@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Table, Typography, Button, Space, Tag, Input, Select, Modal, message } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons'
+import { adminAPI } from '../../services/api'
 
 const { Title } = Typography
 const { Search } = Input
-const { Option } = Select
 
 const UserManagement = () => {
   const [loading, setLoading] = useState(false)
@@ -13,24 +13,36 @@ const UserManagement = () => {
   const [userStatus, setUserStatus] = useState('')
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [users, setUsers] = useState([])
 
-  // 模拟用户数据
-  const mockUsers = [
-    { id: 1, username: 'testuser', email: 'test@example.edu.cn', role: 'student', status: 'active', reputation: 100, postCount: 5, createdAt: '2023-01-01' },
-    { id: 2, username: 'user2', email: 'user2@example.edu.cn', role: 'student', status: 'banned', reputation: 50, postCount: 3, createdAt: '2023-02-01' },
-    { id: 3, username: 'user3', email: 'user3@example.edu.cn', role: 'moderator', status: 'active', reputation: 200, postCount: 20, createdAt: '2023-03-01' },
-    { id: 4, username: 'user4', email: 'user4@example.edu.cn', role: 'merchant', status: 'active', reputation: 150, postCount: 10, createdAt: '2023-04-01' },
-    { id: 5, username: 'user5', email: 'user5@example.edu.cn', role: 'admin', status: 'active', reputation: 300, postCount: 30, createdAt: '2023-05-01' }
-  ]
+  // 从API获取用户数据
+  useEffect(() => {
+    fetchUsers()
+  }, [searchText, userRole, userStatus])
 
-  // 筛选用户
-  const filteredUsers = mockUsers.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchText.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchText.toLowerCase())
-    const matchesRole = !userRole || user.role === userRole
-    const matchesStatus = !userStatus || user.status === userStatus
-    return matchesSearch && matchesRole && matchesStatus
-  })
+  const fetchUsers = async () => {
+    setLoading(true)
+    try {
+      const response = await adminAPI.getUsers({
+        search: searchText,
+        role: userRole,
+        status: userStatus
+      })
+      if (response.success) {
+        setUsers(response.data.users || [])
+      } else {
+        message.error(response.message || '获取用户列表失败')
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+      message.error('获取用户列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 用户数据已经通过API筛选，这里不再需要本地筛选
+  const filteredUsers = users
 
   // 用户状态标签配置
   const getUserStatusTag = (status) => {
@@ -189,11 +201,11 @@ const UserManagement = () => {
             onChange={setUserRole}
             style={{ width: 150 }}
           >
-            <Option value="student">学生</Option>
-            <Option value="merchant">商户</Option>
-            <Option value="moderator">版主</Option>
-            <Option value="admin">管理员</Option>
-            <Option value="superAdmin">超级管理员</Option>
+            <Select.Option value="student">学生</Select.Option>
+            <Select.Option value="merchant">商户</Select.Option>
+            <Select.Option value="moderator">版主</Select.Option>
+            <Select.Option value="admin">管理员</Select.Option>
+            <Select.Option value="superAdmin">超级管理员</Select.Option>
           </Select>
           
           <Select
@@ -203,9 +215,9 @@ const UserManagement = () => {
             onChange={setUserStatus}
             style={{ width: 150 }}
           >
-            <Option value="active">活跃</Option>
-            <Option value="banned">封禁</Option>
-            <Option value="pending">待审核</Option>
+            <Select.Option value="active">活跃</Select.Option>
+            <Select.Option value="banned">封禁</Select.Option>
+            <Select.Option value="pending">待审核</Select.Option>
           </Select>
         </Space>
       </Card>

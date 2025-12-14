@@ -32,9 +32,10 @@ urlpatterns = [
     path('api/reports/', include('reports.urls')),
     path('api/admin/', include('accounts.urls')),
     path('api/admin/posts/', include('content.post_urls')),
-    path('api/admin/comments/', include('content.comment_urls')),
+    path('api/admin/comments/', include('content.admin_comment_urls')),
     path('api/admin/categories/', include('content.category_urls')),
     path('api/admin/ads/', include('ads.urls')),
+    path('api/admin/reports/', include('reports.admin_report_urls')),
     path('api/ads/', include('ads.urls')),
 ]
 

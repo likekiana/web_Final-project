@@ -1,11 +1,12 @@
-import React from 'react'
-import { Layout, Menu, Button, Space } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Layout, Menu, Button, Space, Spin } from 'antd'
 import { 
   BookOutlined, HomeOutlined, ShoppingCartOutlined, TeamOutlined, 
   HeartOutlined, LoginOutlined, UserAddOutlined, HomeTwoTone, 
   BellOutlined, FileTextOutlined, UserOutlined, LogoutOutlined 
 } from '@ant-design/icons'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
+import { categoryAPI } from './services/api'
 
 // 导入页面组件
 import Home from './pages/Home'
@@ -17,15 +18,14 @@ import AdminDashboard from './pages/AdminDashboard'
 import Profile from './pages/Profile'
 import EditPost from './pages/EditPost'
 
-// 导入配置
-import categories from './config/categories'
-
 const { Header, Content, Footer } = Layout
 
 // 导航栏组件
 const AppHeader = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const [categories, setCategories] = useState([])
+  const [loading, setLoading] = useState(true)
 
   // 图标映射
   const iconMap = {
@@ -37,6 +37,25 @@ const AppHeader = () => {
     HeartOutlined: <HeartOutlined />,
     BellOutlined: <BellOutlined />
   }
+
+  // 从API获取分类数据
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true)
+        const response = await categoryAPI.getCategories()
+        if (response.success && Array.isArray(response.data)) {
+          setCategories(response.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   // 生成导航栏菜单项
   const menuItems = [
@@ -111,7 +130,7 @@ const AppHeader = () => {
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Layout className="app-layout">
         <AppHeader />
         <Content className="app-content">

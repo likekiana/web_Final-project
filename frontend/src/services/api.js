@@ -159,6 +159,9 @@ export const userAPI = {
 
 // 管理员相关API
 export const adminAPI = {
+  // 仪表盘统计
+  getDashboardStats: () => api.get('/admin/stats'),
+  
   // 用户管理
   getUsers: (params) => api.get('/admin/users', { params }),
   updateUserRole: (id, data) => api.put(`/admin/users/${id}/role`, data),
@@ -184,7 +187,11 @@ export const adminAPI = {
   getAds: (params) => api.get('/admin/ads/advertisements', { params }),
   approveAd: (id) => api.put(`/admin/ads/advertisements/${id}/approve`, { status: 'active' }),
   rejectAd: (id) => api.put(`/admin/ads/advertisements/${id}/approve`, { status: 'rejected' }),
-  deleteAd: (id) => api.delete(`/admin/ads/advertisements/${id}/delete`)
+  deleteAd: (id) => api.delete(`/admin/ads/advertisements/${id}/delete`),
+  
+  // 举报管理
+  getReports: (params) => api.get('/admin/reports', { params }),
+  processReport: (id, data) => api.put(`/admin/reports/${id}`, data)
 }
 
 export default api

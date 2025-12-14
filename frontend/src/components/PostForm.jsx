@@ -109,9 +109,9 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
         >
           <Select placeholder="请选择板块" size="large">
             {categories.map(category => (
-              <Option key={category.id} value={category.id}>
+              <Select.Option key={category.id} value={category.id}>
                 {category.name}
-              </Option>
+              </Select.Option>
             ))}
           </Select>
         </Form.Item>
@@ -134,12 +134,11 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
           label="上传图片（可选）"
         >
           <Upload
-            action="https://run.mocky.io/v3/435e224c-44fb-4773-9faf-380c5e6a2188"
             listType="picture-card"
             fileList={form.getFieldValue('images') || []}
             onPreview={handlePreview}
             onChange={handleChange}
-            beforeUpload={() => false} // 阻止自动上传，实际项目中需要调整
+            beforeUpload={() => false} // 实际项目中需先上传到存储服务，然后提交URL
           >
             <div>
               <UploadOutlined />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Typography, Button, Space, Tag, Input, Form, Modal, message } from 'antd'
+import { Card, Table, Typography, Button, Space, Tag, Input, InputNumber, Form, Modal, message } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { categoryAPI } from '../../services/api'
 
@@ -264,7 +264,7 @@ const CategoryManagement = () => {
             rules={[{ required: true, message: '请输入排序值!' }]}
             label="排序值"
           >
-            <Input.Number placeholder="请输入排序值" min={1} max={100} />
+            <InputNumber placeholder="请输入排序值" min={1} max={100} />
           </Form.Item>
         </Form>
       </Modal>

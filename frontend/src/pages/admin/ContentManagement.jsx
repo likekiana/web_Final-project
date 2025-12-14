@@ -25,7 +25,7 @@ const ContentManagement = () => {
       const params = {
         page: 1,
         limit: 100,
-        search: searchText
+        keyword: searchText
       }
       const response = await adminAPI.getPosts(params)
       if (response.success) {
@@ -47,12 +47,20 @@ const ContentManagement = () => {
       const params = {
         page: 1,
         limit: 100,
-        search: searchText
+        keyword: searchText
       }
       // 注意：这里假设adminAPI有getComments方法，如果没有，需要调整
       const response = await adminAPI.getComments(params)
       if (response.success) {
-        setComments(response.data?.comments || [])
+        // Transform snake_case to camelCase and add missing fields
+        const transformedComments = (response.data?.comments || []).map(comment => ({
+          ...comment,
+          username: comment.user?.username,
+          postTitle: comment.post?.title,
+          likesCount: comment.likes_count,
+          createdAt: comment.created_at
+        }))
+        setComments(transformedComments)
       }
     } catch (error) {
       console.error('Failed to fetch comments:', error)
@@ -72,14 +80,15 @@ const ContentManagement = () => {
   // 筛选帖子
   const filteredPosts = posts.filter(post => 
     post.title.toLowerCase().includes(searchText.toLowerCase()) ||
-    post.username.toLowerCase().includes(searchText.toLowerCase())
+    (post.user && post.user.username.toLowerCase().includes(searchText.toLowerCase())) ||
+    (post.category && post.category.name.toLowerCase().includes(searchText.toLowerCase()))
   )
 
   // 筛选评论
   const filteredComments = comments.filter(comment => 
     comment.content.toLowerCase().includes(searchText.toLowerCase()) ||
-    comment.username.toLowerCase().includes(searchText.toLowerCase()) ||
-    comment.postTitle.toLowerCase().includes(searchText.toLowerCase())
+    (comment.user && comment.user.username.toLowerCase().includes(searchText.toLowerCase())) ||
+    (comment.post && comment.post.title.toLowerCase().includes(searchText.toLowerCase()))
   )
 
   // 帖子状态标签配置
@@ -119,14 +128,15 @@ const ContentManagement = () => {
     },
     {
       title: '板块',
-      dataIndex: 'categoryName',
-      key: 'categoryName',
-      render: (text) => <Tag color="blue">{text}</Tag>
+      dataIndex: 'category',
+      key: 'category',
+      render: (category) => <Tag color="blue">{category?.name || '未分类'}</Tag>
     },
     {
       title: '作者',
-      dataIndex: 'username',
-      key: 'username'
+      dataIndex: 'user',
+      key: 'user',
+      render: (user) => <>{user?.username || '未知'}</>
     },
     {
       title: '状态',
@@ -136,18 +146,18 @@ const ContentManagement = () => {
     },
     {
       title: '点赞数',
-      dataIndex: 'likesCount',
-      key: 'likesCount'
+      dataIndex: 'likes_count',
+      key: 'likes_count'
     },
     {
       title: '评论数',
-      dataIndex: 'commentsCount',
-      key: 'commentsCount'
+      dataIndex: 'comments_count',
+      key: 'comments_count'
     },
     {
       title: '发布时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt'
+      dataIndex: 'created_at',
+      key: 'created_at'
     },
     {
       title: '操作',

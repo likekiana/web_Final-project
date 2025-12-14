@@ -11,9 +11,7 @@ from .views import (
 
 urlpatterns = [
     # 举报管理路由
-    path('reports', ReportCreateView.as_view(), name='report-create'),
-    path('admin/reports', ReportListView.as_view(), name='admin-report-list'),
-    path('admin/reports/<int:id>', ReportProcessView.as_view(), name='admin-report-process'),
+    path('', ReportCreateView.as_view(), name='report-create'),
     
     # 帖子举报路由
     path('posts/<int:post_id>/report', PostReportCreateView.as_view(), name='post-report'),

@@ -326,6 +326,42 @@ class UserStatusUpdateView(generics.UpdateAPIView):
         })
 
 
+class UserPasswordResetView(generics.UpdateAPIView):
+    """重置用户密码视图（管理员）"""
+    
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    lookup_field = 'id'
+    
+    def update(self, request, *args, **kwargs):
+        """重置用户密码"""
+        instance = self.get_object()
+        
+        # 只允许更新密码
+        if 'password' not in request.data:
+            return Response({
+                "success": False,
+                "message": "请提供新密码",
+                "error": {
+                    "code": 400,
+                    "details": "请提供新密码"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 更新密码
+        instance.set_password(request.data['password'])
+        instance.save()
+        
+        serializer = self.get_serializer(instance)
+        
+        return Response({
+            "success": True,
+            "message": "密码重置成功",
+            "data": serializer.data
+        })
+
+
 class UserPostsView(generics.ListAPIView):
     """获取指定用户帖子列表视图"""
     

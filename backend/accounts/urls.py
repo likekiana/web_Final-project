@@ -6,7 +6,7 @@ from django.urls import path
 from .views import (
     UserRegisterView, UserLoginView, UserProfileView,
     UserDetailView, UserListView, UserRoleUpdateView,
-    UserStatusUpdateView, UserPostsView
+    UserStatusUpdateView, UserPasswordResetView, UserPostsView
 )
 from content.views import AdminCommentListView, AdminCommentDeleteView, DashboardStatsView
 
@@ -24,6 +24,7 @@ urlpatterns = [
     path('users', UserListView.as_view(), name='admin-user-list'),
     path('users/<int:id>/role', UserRoleUpdateView.as_view(), name='admin-user-role-update'),
     path('users/<int:id>/status', UserStatusUpdateView.as_view(), name='admin-user-status-update'),
+    path('users/<int:id>/reset-password', UserPasswordResetView.as_view(), name='admin-user-reset-password'),
     # 评论管理路由
     path('comments', AdminCommentListView.as_view(), name='admin-comment-list'),
     path('comments/<int:id>', AdminCommentDeleteView.as_view(), name='admin-comment-delete'),

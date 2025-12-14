@@ -94,10 +94,12 @@ const AppHeader = () => {
                 <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/profile')} style={{ color: '#fff' }}>
                   个人中心
                 </Button>
-                {/* 管理员入口 - 暂时隐藏，后续添加权限检查后显示 */}
-                <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/admin')} style={{ color: '#fff' }}>
-                  管理后台
-                </Button>
+                {/* 管理员入口 - 只有管理员才能看到 */}
+                {localStorage.getItem('userRole') && ['admin', 'superAdmin'].includes(localStorage.getItem('userRole')) && (
+                  <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/admin')} style={{ color: '#fff' }}>
+                    管理后台
+                  </Button>
+                )}
                 <Button type="link" icon={<LogoutOutlined />} onClick={() => {
                   localStorage.removeItem('token')
                   navigate('/login')
@@ -130,7 +132,7 @@ const AppHeader = () => {
 
 function App() {
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <Router>
       <Layout className="app-layout">
         <AppHeader />
         <Content className="app-content">

@@ -19,15 +19,18 @@ export const AuthProvider = ({ children }) => {
         // 从localStorage获取token
         const token = localStorage.getItem('token')
         if (token) {
-          // 调用API获取当前用户信息
-          const response = await authAPI.getCurrentUser()
-          if (response.success) {
-            setUser(response.data)
-            setIsAuthenticated(true)
-          } else {
-            localStorage.removeItem('token')
+            // 调用API获取当前用户信息
+            const response = await authAPI.getCurrentUser()
+            if (response.success) {
+              setUser(response.data)
+              setIsAuthenticated(true)
+              // 保存用户角色到localStorage
+              localStorage.setItem('userRole', response.data.role)
+            } else {
+              localStorage.removeItem('token')
+              localStorage.removeItem('userRole')
+            }
           }
-        }
       } catch (error) {
         console.error('Failed to check auth status:', error)
         // 清除无效token
@@ -46,8 +49,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.login(credentials)
       if (response.success) {
-        // 保存token到localStorage
+        // 保存token和用户角色到localStorage
         localStorage.setItem('token', response.data?.token?.access)
+        localStorage.setItem('userRole', response.data?.user?.role)
         
         // 更新状态
         setUser(response.data?.user)
@@ -81,8 +85,9 @@ export const AuthProvider = ({ children }) => {
 
   // 退出登录
   const logout = () => {
-    // 清除localStorage中的token
+    // 清除localStorage中的token和用户角色
     localStorage.removeItem('token')
+    localStorage.removeItem('userRole')
     
     // 更新状态
     setUser(null)

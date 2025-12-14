@@ -116,13 +116,13 @@ export const commentAPI = {
   // 取消点赞评论
   unlikeComment: (postId, commentId) => api.delete(`/posts/${postId}/comments/${commentId}/like`),
   // 举报评论
-  reportComment: (commentId, data) => api.post(`/comments/${commentId}/report`, data)
+  reportComment: (commentId, data) => api.post(`/reports/comments/${commentId}/report`, data)
 }
 
 // 举报相关API
 export const reportAPI = {
   // 举报帖子
-  reportPost: (postId, data) => api.post(`/posts/${postId}/report`, data),
+  reportPost: (postId, data) => api.post(`/reports/posts/${postId}/report`, data),
   // 创建举报
   createReport: (data) => api.post('/reports', data),
   // 获取举报列表（管理员）
@@ -165,8 +165,8 @@ export const adminAPI = {
   // 用户管理
   getUsers: (params) => api.get('/admin/users', { params }),
   updateUserRole: (id, data) => api.put(`/admin/users/${id}/role`, data),
-  banUser: (id) => api.put(`/admin/users/${id}/ban`),
-  unbanUser: (id) => api.put(`/admin/users/${id}/unban`),
+  updateUserStatus: (id, data) => api.put(`/admin/users/${id}/status`, data),
+  resetUserPassword: (id, data) => api.put(`/admin/users/${id}/reset-password`, data),
   
   // 内容管理
   getPosts: (params) => api.get('/admin/posts', { params }),
@@ -192,6 +192,40 @@ export const adminAPI = {
   // 举报管理
   getReports: (params) => api.get('/admin/reports', { params }),
   processReport: (id, data) => api.put(`/admin/reports/${id}`, data)
+}
+
+// 收藏相关API
+export const favoriteAPI = {
+  // 收藏/取消收藏帖子
+  toggleFavorite: (postId) => api.post(`/favorites/toggle/${postId}/`),
+  // 获取用户收藏列表
+  getFavorites: (params) => api.get('/favorites/list/', { params }),
+  // 检查帖子是否已被收藏
+  checkFavorite: (postId) => api.get(`/favorites/check/${postId}/`),
+}
+
+// 关注相关API
+export const followAPI = {
+  // 关注/取消关注用户
+  toggleFollow: (userId) => api.post(`/follows/toggle/${userId}/`),
+  // 获取当前用户关注列表
+  getFollowing: (params) => api.get('/follows/following', { params }),
+  // 获取当前用户粉丝列表
+  getFollowers: (params) => api.get('/follows/followers', { params }),
+  // 检查是否已关注某用户
+  checkFollow: (userId) => api.get(`/follows/check/${userId}/`),
+  // 获取其他用户关注列表
+  getOtherFollowing: (userId, params) => api.get(`/follows/${userId}/following`, { params }),
+  // 获取其他用户粉丝列表
+  getOtherFollowers: (userId, params) => api.get(`/follows/${userId}/followers`, { params })
+}
+
+// 浏览历史相关API
+export const historyAPI = {
+  // 获取浏览历史列表
+  getBrowsingHistory: () => api.get('/history/history'),
+  // 清空浏览历史
+  clearBrowsingHistory: () => api.delete('/history/history/clear')
 }
 
 export default api

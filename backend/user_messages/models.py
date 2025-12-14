@@ -20,7 +20,9 @@ class Message(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='sent_messages',
-        verbose_name=_('发送者')
+        verbose_name=_('发送者'),
+        null=True,
+        blank=True
     )
     recipient = models.ForeignKey(
         User,
@@ -77,7 +79,7 @@ class Message(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=(models.Q(sender__isnull=False) | models.Q(is_system=True)),
+                condition=(models.Q(sender__isnull=False) | models.Q(is_system=True)),
                 name='sender_or_system_constraint'
             )
         ]

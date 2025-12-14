@@ -64,6 +64,26 @@ class UserAdmin(BaseUserAdmin):
     
     # 只读字段
     readonly_fields = ('created_at', 'updated_at')
+    
+    # 检查用户是否有删除权限
+    def has_delete_permission(self, request, obj=None):
+        """检查用户是否有删除权限"""
+        # 超级管理员可以删除所有用户
+        if request.user.is_superuser:
+            return True
+        # 管理员可以删除非管理员和超级管理员用户
+        if request.user.is_staff and obj and not obj.is_superuser:
+            return True
+        return False
+    
+    def get_actions(self, request):
+        """获取可用操作列表"""
+        actions = super().get_actions(request)
+        # 确保删除操作可用
+        if 'delete_selected' not in actions:
+            from django.contrib.admin.actions import delete_selected
+            actions['delete_selected'] = (delete_selected, 'delete_selected', _('删除选中的用户'))
+        return actions
 
 
 # 注册用户模型到后台管理

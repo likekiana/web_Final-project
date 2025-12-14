@@ -29,6 +29,8 @@ urlpatterns = [
     path('api/posts/', include('content.post_urls')),
     path('api/comments/', include('content.comment_urls')),
     path('api/likes/', include('likes.urls')),
+    path('api/favorites/', include('favorites.urls')),
+    path('api/follows/', include('follows.urls')),
     path('api/reports/', include('reports.urls')),
     path('api/admin/', include('accounts.urls')),
     path('api/admin/posts/', include('content.post_urls')),
@@ -37,6 +39,7 @@ urlpatterns = [
     path('api/admin/ads/', include('ads.urls')),
     path('api/admin/reports/', include('reports.admin_report_urls')),
     path('api/ads/', include('ads.urls')),
+    path('api/history/', include('browsing_history.urls')),
 ]
 
 # 静态文件和媒体文件配置

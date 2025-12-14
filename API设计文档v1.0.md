@@ -130,8 +130,13 @@
     "email": "test@xx.edu.cn",
     "role": "student",
     "avatar": null,
+    "bio": "这是我的个人简介",
     "reputation": 100,
-    "createdAt": "2023-01-01T00:00:00.000Z"
+    "post_count": 5,
+    "comment_count": 12,
+    "status": "active",
+    "created_at": "2023-01-01T00:00:00.000Z",
+    "updated_at": "2023-01-05T10:30:00.000Z"
   }
 }
 ```
@@ -153,8 +158,12 @@
     "username": "testuser",
     "role": "student",
     "avatar": null,
+    "bio": "这是我的个人简介",
     "reputation": 100,
-    "createdAt": "2023-01-01T00:00:00.000Z"
+    "post_count": 5,
+    "comment_count": 12,
+    "status": "active",
+    "created_at": "2023-01-01T00:00:00.000Z"
   }
 }
 ```

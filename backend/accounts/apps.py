@@ -11,3 +11,7 @@ class AccountsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'accounts'
     verbose_name = _('用户认证')
+    
+    def ready(self):
+        """应用初始化时导入信号模块"""
+        import accounts.signals  # noqa

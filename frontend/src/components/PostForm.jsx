@@ -45,8 +45,8 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
       const postData = {
         title: values.title,
         content: values.content,
-        category_id: values.categoryId // 使用后端期望的字段名
-        // 图片上传功能暂不实现
+        category_id: values.categoryId, // 使用后端期望的字段名
+        media_files: values.mediaFiles || [] // 媒体文件数组，支持图片和视频
       }
       
       // 调用API创建帖子
@@ -130,15 +130,16 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
         </Form.Item>
 
         <Form.Item
-          name="images"
-          label="上传图片（可选）"
+          name="mediaFiles"
+          label="上传图片/视频（可选）"
         >
           <Upload
             listType="picture-card"
-            fileList={form.getFieldValue('images') || []}
+            fileList={form.getFieldValue('mediaFiles') || []}
             onPreview={handlePreview}
             onChange={handleChange}
             beforeUpload={() => false} // 实际项目中需先上传到存储服务，然后提交URL
+            accept="image/*,video/*" // 支持图片和视频文件
           >
             <div>
               <UploadOutlined />
@@ -147,7 +148,11 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
           </Upload>
           {previewVisible && (
             <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, background: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-              <img src={previewImage} alt="预览" style={{ maxWidth: '90%', maxHeight: '90%' }} />
+              {previewImage.endsWith('.mp4') || previewImage.endsWith('.mov') || previewImage.endsWith('.avi') ? (
+                <video src={previewImage} controls style={{ maxWidth: '90%', maxHeight: '90%' }} />
+              ) : (
+                <img src={previewImage} alt="预览" style={{ maxWidth: '90%', maxHeight: '90%' }} />
+              )}
               <Button type="primary" onClick={handleCancelPreview} style={{ position: 'absolute', top: 20, right: 20, zIndex: 10000 }}>
                 关闭
               </Button>

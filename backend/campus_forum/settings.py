@@ -42,6 +42,12 @@ INSTALLED_APPS = [
     'likes',
     'reports',
     'ads',
+    'notifications',
+    'user_messages',
+    'tags',
+    'favorites',
+    'follows',
+    'browsing_history',
 ]
 
 # 中间件配置

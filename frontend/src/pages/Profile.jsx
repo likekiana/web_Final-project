@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input, Upload } from 'antd'
-import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined, UploadOutlined } from '@ant-design/icons'
+import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input, Upload, Tabs, Empty } from 'antd'
+import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined, UploadOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
-import { authAPI, userAPI } from '../services/api'
+import { authAPI, userAPI, historyAPI } from '../services/api'
 
 const { Title, Paragraph, Text } = Typography
 
@@ -10,10 +10,15 @@ const Profile = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [posts, setPosts] = useState([])
+  const [browsingHistory, setBrowsingHistory] = useState([])
   const [loading, setLoading] = useState(true)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [form] = Form.useForm()
   const [saveLoading, setSaveLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState('posts')
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(null)
 
   // 获取当前用户信息
   useEffect(() => {
@@ -44,6 +49,45 @@ const Profile = () => {
     fetchCurrentUser()
   }, [form])
 
+  // 获取浏览历史
+  const fetchBrowsingHistory = async () => {
+    setHistoryLoading(true)
+    try {
+      const response = await historyAPI.getBrowsingHistory()
+      if (response.success) {
+        setBrowsingHistory(response.data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch browsing history:', error)
+      message.error('获取浏览历史失败')
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  // 清空浏览历史
+  const handleClearHistory = async () => {
+    try {
+      const response = await historyAPI.clearBrowsingHistory()
+      if (response.success) {
+        setBrowsingHistory([])
+        message.success('浏览历史已清空')
+      }
+    } catch (error) {
+      console.error('Failed to clear browsing history:', error)
+      message.error('清空浏览历史失败')
+    }
+  }
+
+  // 当选项卡切换到浏览历史时获取数据
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchBrowsingHistory()
+    }
+  }, [activeTab])
+
+
+
   const handleLogout = () => {
     // 实现退出登录逻辑
     localStorage.removeItem('token')
@@ -69,14 +113,16 @@ const Profile = () => {
       const formData = new FormData();
       formData.append('username', values.username);
       formData.append('bio', values.bio || '');
-      if (values.avatarFile) {
-        formData.append('avatar_file', values.avatarFile);
+      if (avatarFile) {
+        formData.append('avatar_file', avatarFile);
       }
       
       const response = await userAPI.updateUserInfo(user.id, formData, true)
       if (response.success) {
         setUser(response.data)
         setIsEditing(false)
+        setAvatarFile(null)
+        setAvatarPreview(null)
         message.success('资料更新成功')
       } else {
         message.error(response.message || '更新失败')
@@ -132,30 +178,37 @@ const Profile = () => {
                   style={{ marginTop: 16 }}
                   encType="multipart/form-data"
                 >
-                  <div style={{ marginBottom: 16 }}>
+                  <div style={{ marginBottom: 16, textAlign: 'center' }}>
                     <Avatar
                       size={100}
                       icon={<UserOutlined />}
-                      src={form.getFieldValue('avatarPreview') || user.avatar}
+                      src={user.avatar}
                       style={{ marginBottom: 16 }}
                     />
-                    <Form.Item name="avatarFile">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              form.setFieldsValue({ avatarPreview: event.target.result });
-                            };
-                            reader.readAsDataURL(file);
-                            form.setFieldsValue({ avatarFile: file });
+                    <Form.Item
+                      name="avatarFile"
+                      valuePropName="file"
+                      getValueFromEvent={(e) => {
+                        if (e.file) {
+                          setAvatarFile(e.file);
+                          return e.file;
+                        }
+                        return null;
+                      }}
+                    >
+                      <Upload
+                        name="avatarFile"
+                        listType="picture-circle"
+                        beforeUpload={() => false} // 阻止自动上传
+                        onChange={(info) => {
+                          if (info.file.status === 'removed') {
+                            setAvatarFile(null);
                           }
-                        }} 
-                        style={{ display: 'block', margin: '0 auto' }}
-                      />
+                        }}
+                        maxCount={1}
+                      >
+                        <Button icon={<UploadOutlined />}>更换头像</Button>
+                      </Upload>
                     </Form.Item>
                   </div>
                   <Form.Item
@@ -225,61 +278,150 @@ const Profile = () => {
           </Card>
         </Col>
         
-        {/* 右侧帖子列表 */}
+        {/* 右侧内容区域 - 使用选项卡 */}
         <Col xs={24} md={16}>
-          <Card title="我的发帖" hoverable>
-            {posts.length > 0 ? (
-              <List
-                grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
-                dataSource={posts}
-                renderItem={(post) => (
-                  <List.Item
-                    actions={[
-                      <Space size="middle">
-                        <Text type="secondary">
-                          <BookOutlined style={{ marginRight: 4 }} />
-                          {post.likes_count || 0} 点赞
-                        </Text>
-                        <Text type="secondary">
-                          <CommentOutlined style={{ marginRight: 4 }} />
-                          {post.comment_count || 0} 评论
-                        </Text>
-                      </Space>
-                    ]}
-                    style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={[
+              {
+                key: 'posts',
+                label: '我的发帖',
+                children: (
+                  <Card hoverable>
+                    {posts.length > 0 ? (
+                      <List
+                        grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
+                        dataSource={posts}
+                        renderItem={(post) => (
+                          <List.Item
+                            actions={[
+                              <Space size="middle">
+                                <Text type="secondary">
+                                  <BookOutlined style={{ marginRight: 4 }} />
+                                  {post.likes_count || 0} 点赞
+                                </Text>
+                                <Text type="secondary">
+                                  <CommentOutlined style={{ marginRight: 4 }} />
+                                  {post.comment_count || 0} 评论
+                                </Text>
+                              </Space>
+                            ]}
+                            style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
+                          >
+                            <List.Item.Meta
+                              title={
+                                <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                              }
+                              description={
+                                <div>
+                                  <Paragraph ellipsis={{ rows: 2 }}>{post.content}</Paragraph>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                      {new Date(post.created_at).toLocaleString()}
+                                    </Text>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                        <Text type="secondary">暂无发帖记录</Text>
+                        <br />
+                        <Link to="/posts/create">
+                          <Button
+                            type="primary"
+                            icon={<BookOutlined />}
+                            style={{ marginTop: 16 }}
+                          >
+                            发布第一条帖子
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </Card>
+                ),
+              },
+              {
+                key: 'history',
+                label: '浏览历史',
+                children: (
+                  <Card
+                    hoverable
+                    extra={
+                      browsingHistory.length > 0 && (
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={handleClearHistory}
+                        >
+                          清空历史
+                        </Button>
+                      )
+                    }
                   >
-                    <List.Item.Meta
-                      title={
-                        <Link to={`/posts/${post.id}`}>{post.title}</Link>
-                      }
-                      description={
-                        <div>
-                          <Paragraph ellipsis={{ rows: 2 }}>{post.content}</Paragraph>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                              {new Date(post.created_at).toLocaleString()}
-                            </Text>
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                <Text type="secondary">暂无发帖记录</Text>
-                <br />
-                <Link to="/posts/create">
-                  <Button
-                    type="primary"
-                    icon={<BookOutlined />}
-                    style={{ marginTop: 16 }}
-                  >
-                    发布第一条帖子
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </Card>
+                    <Spin spinning={historyLoading}>
+                      {browsingHistory.length > 0 ? (
+                        <List
+                          grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
+                          dataSource={browsingHistory}
+                          renderItem={(item) => {
+                            const post = item.post;
+                            return (
+                              <List.Item
+                                actions={[
+                                  <Space size="middle">
+                                    <Text type="secondary">
+                                      <BookOutlined style={{ marginRight: 4 }} />
+                                      {post.likes_count || 0} 点赞
+                                    </Text>
+                                    <Text type="secondary">
+                                      <CommentOutlined style={{ marginRight: 4 }} />
+                                      {post.comment_count || 0} 评论
+                                    </Text>
+                                  </Space>
+                                ]}
+                                style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
+                              >
+                                <List.Item.Meta
+                                  title={
+                                    <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                                  }
+                                  description={
+                                    <div>
+                                      <Paragraph ellipsis={{ rows: 2 }}>{post.content}</Paragraph>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          {new Date(post.created_at).toLocaleString()}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          <EyeOutlined style={{ marginRight: 4 }} />
+                                          {new Date(item.viewed_at).toLocaleString()}
+                                        </Text>
+                                      </div>
+                                    </div>
+                                  }
+                                />
+                              </List.Item>
+                            );
+                          }}
+                        />
+                      ) : (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={
+                            <span>暂无浏览历史记录</span>
+                          }
+                        />
+                      )}
+                    </Spin>
+                  </Card>
+                ),
+              },
+            ]}
+          />
         </Col>
       </Row>
     </div>

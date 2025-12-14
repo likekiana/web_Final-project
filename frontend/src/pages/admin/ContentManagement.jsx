@@ -94,6 +94,8 @@ const ContentManagement = () => {
   // 帖子状态标签配置
   const getPostStatusTag = (status) => {
     switch (status) {
+      case 'normal':
+        return <Tag color="green">正常</Tag>
       case 'active':
         return <Tag color="green">活跃</Tag>
       case 'pending':
@@ -102,6 +104,8 @@ const ContentManagement = () => {
         return <Tag color="gray">已删除</Tag>
       case 'banned':
         return <Tag color="red">已封禁</Tag>
+      case 'reported':
+        return <Tag color="yellow">已举报</Tag>
       default:
         return <Tag color="gray">未知</Tag>
     }

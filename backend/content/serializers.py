@@ -71,7 +71,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = (
-            'id', 'title', 'content', 'images', 'type', 'status',
+            'id', 'title', 'content', 'media_files', 'type', 'status',
             'user', 'user_id', 'category', 'category_id',
             'likes_count', 'comments_count', 'views_count',
             'is_liked', 'is_sticky', 'is_essential',
@@ -164,7 +164,7 @@ class PostListSerializer(PostSerializer):
     
     class Meta(PostSerializer.Meta):
         fields = (
-            'id', 'title', 'type', 'user', 'category', 'category_id',
+            'id', 'title', 'content', 'media_files', 'type', 'user', 'category', 'category_id',
             'likes_count', 'comments_count', 'views_count',
             'is_liked', 'is_sticky', 'is_essential',
             'created_at'

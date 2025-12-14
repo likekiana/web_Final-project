@@ -72,8 +72,8 @@ class Post(models.Model):
         db_index=True
     )
     
-    # 图片
-    images = models.JSONField(_('图片URL数组'), default=list, null=True, blank=True)
+    # 媒体文件（图片和视频）
+    media_files = models.JSONField(_('媒体文件URL数组'), default=list, null=True, blank=True)
     
     # 关联关系
     user = models.ForeignKey(

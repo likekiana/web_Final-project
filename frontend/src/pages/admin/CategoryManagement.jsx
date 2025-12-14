@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Typography, Button, Space, Tag, Input, InputNumber, Form, Modal, message } from 'antd'
+import { Card, Table, Typography, Button, Space, Tag, Input, InputNumber, Form, Modal, message, Select } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { categoryAPI } from '../../services/api'
 
@@ -230,7 +230,7 @@ const CategoryManagement = () => {
           initialValues={{
             name: '',
             description: '',
-            icon: 'book',
+            icon: 'BookOutlined',
             color: '#1890ff',
             order: 1
           }}
@@ -257,6 +257,30 @@ const CategoryManagement = () => {
             label="板块描述"
           >
             <Input.TextArea rows={4} placeholder="请输入板块描述" />
+          </Form.Item>
+
+          <Form.Item
+            name="icon"
+            rules={[{ required: true, message: '请选择板块图标!' }]}
+            label="板块图标"
+          >
+            <Select placeholder="请选择板块图标">
+              <Select.Option value="BookOutlined">图书</Select.Option>
+              <Select.Option value="HomeOutlined">首页</Select.Option>
+              <Select.Option value="ShoppingCartOutlined">购物车</Select.Option>
+              <Select.Option value="TeamOutlined">团队</Select.Option>
+              <Select.Option value="FileTextOutlined">文档</Select.Option>
+              <Select.Option value="HeartOutlined">收藏</Select.Option>
+              <Select.Option value="BellOutlined">通知</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="color"
+            rules={[{ required: true, message: '请选择板块颜色!' }]}
+            label="板块颜色"
+          >
+            <Input placeholder="请输入颜色代码，如 #1890ff" />
           </Form.Item>
 
           <Form.Item

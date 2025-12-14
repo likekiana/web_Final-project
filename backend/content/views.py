@@ -255,6 +255,18 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         # 增加浏览量
         instance.increment_views_count()
+        
+        # 记录浏览历史（如果用户已登录）
+        if request.user.is_authenticated:
+            from browsing_history.models import BrowsingHistory
+            from django.utils import timezone
+            # 使用get_or_create确保每个用户对每个帖子只有一条记录
+            BrowsingHistory.objects.update_or_create(
+                user=request.user,
+                post=instance,
+                defaults={'viewed_at': timezone.now()}
+            )
+        
         serializer = self.get_serializer(instance)
         return Response({
             "success": True,

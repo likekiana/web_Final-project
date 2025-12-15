@@ -40,6 +40,10 @@ urlpatterns = [
     path('api/admin/reports/', include('reports.admin_report_urls')),
     path('api/ads/', include('ads.urls')),
     path('api/history/', include('browsing_history.urls')),
+    path('api/notifications/', include('notifications.urls')),
+    path('api/messages/', include('user_messages.urls')),
+    # AI助手路由
+    path('api/ai/', include('ai_assistant.urls')),
 ]
 
 # 静态文件和媒体文件配置

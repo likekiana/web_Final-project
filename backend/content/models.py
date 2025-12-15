@@ -54,6 +54,7 @@ class Post(models.Model):
         NORMAL = 'normal', _('普通帖子')
         TRADE = 'trade', _('二手交易帖子')
         ADVERTISEMENT = 'advertisement', _('广告帖子')
+        ANONYMOUS = 'anonymous', _('匿名帖子')
     
     # 帖子状态枚举
     class Status(models.TextChoices):

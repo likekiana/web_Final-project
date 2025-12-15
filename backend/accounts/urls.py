@@ -6,29 +6,31 @@ from django.urls import path
 from .views import (
     UserRegisterView, UserLoginView, UserProfileView,
     UserDetailView, UserListView, UserRoleUpdateView,
-    UserStatusUpdateView, UserPasswordResetView, UserPostsView
+    UserStatusUpdateView, UserPasswordResetView, UserDeleteView,
+    UserPostsView
 )
 from content.views import AdminCommentListView, AdminCommentDeleteView, DashboardStatsView
 
 urlpatterns = [
     # 认证相关路由 - 由/api/auth/前缀访问
-    path('register', UserRegisterView.as_view(), name='user-register'),
-    path('login', UserLoginView.as_view(), name='user-login'),
-    path('me', UserProfileView.as_view(), name='user-profile'),
+    path('register/', UserRegisterView.as_view(), name='user-register'),
+    path('login/', UserLoginView.as_view(), name='user-login'),
+    path('me/', UserProfileView.as_view(), name='user-profile'),
     
     # 用户相关路由 - 由/api/users/前缀访问
-    path('<int:id>', UserDetailView.as_view(), name='user-detail'),
-    path('<int:id>/posts', UserPostsView.as_view(), name='user-posts'),
+    path('<int:id>/', UserDetailView.as_view(), name='user-detail'),
+    path('<int:id>/posts/', UserPostsView.as_view(), name='user-posts'),
     
     # 管理员相关路由 - 由/api/admin/前缀访问
-    path('users', UserListView.as_view(), name='admin-user-list'),
-    path('users/<int:id>/role', UserRoleUpdateView.as_view(), name='admin-user-role-update'),
-    path('users/<int:id>/status', UserStatusUpdateView.as_view(), name='admin-user-status-update'),
-    path('users/<int:id>/reset-password', UserPasswordResetView.as_view(), name='admin-user-reset-password'),
+    path('users/', UserListView.as_view(), name='admin-user-list'),
+    path('users/<int:id>/role/', UserRoleUpdateView.as_view(), name='admin-user-role-update'),
+    path('users/<int:id>/status/', UserStatusUpdateView.as_view(), name='admin-user-status-update'),
+    path('users/<int:id>/reset-password/', UserPasswordResetView.as_view(), name='admin-user-reset-password'),
+    path('users/<int:id>/delete/', UserDeleteView.as_view(), name='admin-user-delete'),
     # 评论管理路由
-    path('comments', AdminCommentListView.as_view(), name='admin-comment-list'),
-    path('comments/<int:id>', AdminCommentDeleteView.as_view(), name='admin-comment-delete'),
+    path('comments/', AdminCommentListView.as_view(), name='admin-comment-list'),
+    path('comments/<int:id>/', AdminCommentDeleteView.as_view(), name='admin-comment-delete'),
     
     # 仪表盘统计路由
-    path('stats', DashboardStatsView.as_view(), name='admin-dashboard-stats'),
+    path('stats/', DashboardStatsView.as_view(), name='admin-dashboard-stats'),
 ]

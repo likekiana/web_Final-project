@@ -4,5 +4,5 @@ from .views import ReportListView, ReportProcessView
 
 urlpatterns = [
     path('', ReportListView.as_view(), name='admin-report-list'),
-    path('<int:id>', ReportProcessView.as_view(), name='admin-report-process'),
+    path('<int:id>/', ReportProcessView.as_view(), name='admin-report-process'),
 ]

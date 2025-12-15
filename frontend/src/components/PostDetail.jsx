@@ -206,8 +206,11 @@ const PostDetail = ({ postId }) => {
         {/* 帖子元信息 */}
         <Space style={{ marginBottom: 16 }}>
           <Tag color="blue">{post.category?.name || '未分类'}</Tag>
+          {post.is_sticky && <Tag color="red">置顶</Tag>}
+          {post.is_essential && <Tag color="purple">精华</Tag>}
           {post.type === 'trade' && <Tag color="orange">交易</Tag>}
           {post.type === 'advertisement' && <Tag color="red">广告</Tag>}
+          {post.type === 'anonymous' && <Tag color="gray">匿名</Tag>}
         </Space>
 
         {/* 帖子内容 */}
@@ -233,23 +236,27 @@ const PostDetail = ({ postId }) => {
         {/* 帖子作者信息和统计 */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
           <Space>
-            <Avatar icon={<UserOutlined />} src={post.user?.avatar} size={40} />
+            <Avatar icon={<UserOutlined />} src={post.type === 'anonymous' ? null : post.user?.avatar} size={40} />
             <div>
-              <Text strong>{post.user?.username}</Text>
+              <Text strong>{post.type === 'anonymous' ? '匿名用户' : post.user?.username}</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {new Date(post.created_at).toLocaleString()}
               </Text>
-              <br />
-              <Button 
-                type={isFollowing ? "primary" : "default"} 
-                size="small"
-                loading={following}
-                onClick={handleToggleFollow}
-                style={{ marginTop: 8 }}
-              >
-                {isFollowing ? '已关注' : '关注'}
-              </Button>
+              {post.type !== 'anonymous' && (
+                <>
+                  <br />
+                  <Button 
+                    type={isFollowing ? "primary" : "default"} 
+                    size="small"
+                    loading={following}
+                    onClick={handleToggleFollow}
+                    style={{ marginTop: 8 }}
+                  >
+                    {isFollowing ? '已关注' : '关注'}
+                  </Button>
+                </>
+              )}
             </div>
           </Space>
           

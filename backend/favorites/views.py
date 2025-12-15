@@ -69,10 +69,18 @@ class FavoriteListView(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response({
+            paginated_response = self.get_paginated_response(serializer.data)
+            
+            # 自定义分页响应格式
+            return Response({
                 "success": True,
                 "message": "获取收藏列表成功",
-                "data": serializer.data
+                "data": {
+                    "results": paginated_response.data['results'],
+                    "count": paginated_response.data['count'],
+                    "next": paginated_response.data['next'],
+                    "previous": paginated_response.data['previous']
+                }
             })
         
         serializer = self.get_serializer(queryset, many=True)

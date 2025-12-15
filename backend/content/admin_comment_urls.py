@@ -4,5 +4,5 @@ from .views import AdminCommentListView, AdminCommentDeleteView
 
 urlpatterns = [
     path('', AdminCommentListView.as_view(), name='admin-comment-list'),
-    path('<int:id>/delete', AdminCommentDeleteView.as_view(), name='admin-comment-delete'),
+    path('<int:id>/delete/', AdminCommentDeleteView.as_view(), name='admin-comment-delete'),
 ]

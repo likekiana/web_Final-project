@@ -15,6 +15,12 @@ python-dotenv>=1.0,<1.1
 Pillow>=10.2,<10.3
 django-cleanup>=7.0,<7.1
 
+# AI相关库
+transformers>=4.35,<4.36
+torch>=2.1,<2.2
+numpy>=1.26,<1.27
+requests>=2.31,<2.32
+
 # 开发工具
 pytest>=7.4,<7.5
 pytest-django>=4.7,<4.8

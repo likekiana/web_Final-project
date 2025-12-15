@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Layout, Menu, Button, Space, Spin } from 'antd'
-import { 
-  BookOutlined, HomeOutlined, ShoppingCartOutlined, TeamOutlined, 
-  HeartOutlined, LoginOutlined, UserAddOutlined, HomeTwoTone, 
-  BellOutlined, FileTextOutlined, UserOutlined, LogoutOutlined 
+import {
+  BookOutlined, HomeOutlined, ShoppingCartOutlined, TeamOutlined,
+  HeartOutlined, LoginOutlined, UserAddOutlined, HomeTwoTone,
+  BellOutlined, MessageOutlined, FileTextOutlined, UserOutlined, LogoutOutlined
 } from '@ant-design/icons'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { categoryAPI } from './services/api'
@@ -17,6 +17,8 @@ import PostDetailPage from './pages/PostDetailPage'
 import AdminDashboard from './pages/AdminDashboard'
 import Profile from './pages/Profile'
 import EditPost from './pages/EditPost'
+import Notifications from './pages/Notifications'
+import Messages from './pages/Messages'
 
 const { Header, Content, Footer } = Layout
 
@@ -91,6 +93,12 @@ const AppHeader = () => {
           <Space>
             {isLoggedIn ? (
               <>
+                <Button type="link" icon={<BellOutlined />} onClick={() => navigate('/notifications')} style={{ color: '#fff' }}>
+                  通知
+                </Button>
+                <Button type="link" icon={<MessageOutlined />} onClick={() => navigate('/messages')} style={{ color: '#fff' }}>
+                  私信
+                </Button>
                 <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/profile')} style={{ color: '#fff' }}>
                   个人中心
                 </Button>
@@ -150,7 +158,9 @@ function App() {
               <Route path="/posts/:id" element={<PostDetailPage />} />
               <Route path="/posts/:id/edit" element={<EditPost />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/admin">
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/admin/*">
                 <Route index element={<AdminDashboard />} />
                 <Route path="*" element={<AdminDashboard />} />
               </Route>

@@ -11,6 +11,8 @@ from .models import Category, Post, Comment
 from accounts.models import User
 from ads.models import Advertisement
 from reports.models import Report
+from ai_audit.services import AIAuditService
+from ai_audit.models import AuditResult
 from .serializers import (
     CategorySerializer, CategoryListSerializer,
     PostSerializer, PostListSerializer,
@@ -209,24 +211,44 @@ class PostListView(generics.ListCreateAPIView):
     
     def create(self, request, *args, **kwargs):
         """创建帖子"""
-        print("=== 创建帖子请求 ===")
-        print("请求数据:", request.data)
-        serializer = PostSerializer(data=request.data, context={'request': request})
+        # 获取请求数据
+        data = request.data.copy()
+        
+        # AI审核帖子内容，替换敏感词
+        if 'content' in data:
+            audit_service = AIAuditService()
+            audit_result = audit_service.audit_content(data['content'])
+            # 使用替换后的内容
+            data['content'] = audit_result['clean_content']
+        
+        serializer = PostSerializer(data=data, context={'request': request})
         try:
             serializer.is_valid(raise_exception=True)
-            print("验证通过的数据:", serializer.validated_data)
             post = serializer.save()
-            print("帖子创建成功:", post.id)
+            
+            # 保存审核结果
+            AuditResult.objects.create(
+                object_id=post.id,
+                audit_type='post',
+                violation_type=audit_result['violation_type'],
+                confidence=audit_result['confidence'],
+                has_violation=audit_result['has_violation'],
+                sensitive_words=audit_result['sensitive_words'],
+                violation_reason=audit_result['violation_reason']
+            )
+            
+            # 如果检测到违规，更新帖子状态
+            if audit_result['has_violation']:
+                post.status = 'reported'
+                post.save(update_fields=['status'])
+                
             return Response({
                 "success": True,
-                "message": "创建成功",
+                "message": "创建成功" if not audit_result['has_violation'] else "帖子已提交，正在审核",
                 "data": PostSerializer(post).data
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             print("创建帖子失败:", str(e))
-            print("验证错误:", serializer.errors if hasattr(serializer, 'errors') else "无详细错误信息")
-            if hasattr(e, 'detail'):
-                print("异常详情:", e.detail)
             return Response({
                 "success": False,
                 "message": "创建失败",
@@ -548,12 +570,39 @@ class CommentListView(generics.ListCreateAPIView):
     
     def create(self, request, *args, **kwargs):
         """创建评论"""
-        serializer = CommentSerializer(data=request.data, context={'request': request})
+        # 获取请求数据
+        data = request.data.copy()
+        
+        # AI审核评论内容，替换敏感词
+        if 'content' in data:
+            audit_service = AIAuditService()
+            audit_result = audit_service.audit_content(data['content'])
+            # 使用替换后的内容
+            data['content'] = audit_result['clean_content']
+        
+        serializer = CommentSerializer(data=data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         comment = serializer.save()
+        
+        # 保存审核结果
+        AuditResult.objects.create(
+            object_id=comment.id,
+            audit_type='comment',
+            violation_type=audit_result['violation_type'],
+            confidence=audit_result['confidence'],
+            has_violation=audit_result['has_violation'],
+            sensitive_words=audit_result['sensitive_words'],
+            violation_reason=audit_result['violation_reason']
+        )
+        
+        # 如果检测到违规，更新评论状态
+        if audit_result['has_violation']:
+            comment.status = 'reported'
+            comment.save(update_fields=['status'])
+            
         return Response({
             "success": True,
-            "message": "创建成功",
+            "message": "创建成功" if not audit_result['has_violation'] else "评论已提交，正在审核",
             "data": CommentSerializer(comment).data
         }, status=status.HTTP_201_CREATED)
 

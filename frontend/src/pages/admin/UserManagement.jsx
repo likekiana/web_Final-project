@@ -84,12 +84,15 @@ const UserManagement = () => {
       title: '用户ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80
+      width: 80,
+      align: 'center'
     },
     {
       title: '用户名',
       dataIndex: 'username',
       key: 'username',
+      width: 120,
+      ellipsis: true,
       render: (text, record) => (
         <Space>
           <UserOutlined />
@@ -100,65 +103,94 @@ const UserManagement = () => {
     {
       title: '邮箱',
       dataIndex: 'email',
-      key: 'email'
+      key: 'email',
+      width: 200,
+      ellipsis: true
     },
     {
       title: '角色',
       dataIndex: 'role',
       key: 'role',
+      width: 100,
+      align: 'center',
       render: (text) => getUserRoleTag(text)
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
+      width: 80,
+      align: 'center',
       render: (text) => getUserStatusTag(text)
     },
     {
       title: '信誉值',
       dataIndex: 'reputation',
-      key: 'reputation'
+      key: 'reputation',
+      width: 80,
+      align: 'center'
     },
     {
       title: '发帖数',
       dataIndex: 'postCount',
-      key: 'postCount'
+      key: 'postCount',
+      width: 80,
+      align: 'center'
+    },
+    {
+      title: '评论数',
+      dataIndex: 'commentCount',
+      key: 'commentCount',
+      width: 80,
+      align: 'center'
     },
     {
       title: '注册时间',
       dataIndex: 'createdAt',
-      key: 'createdAt'
+      key: 'createdAt',
+      width: 150,
+      ellipsis: true
     },
     {
       title: '操作',
       key: 'action',
+      width: 200,
+      align: 'center',
       render: (_, record) => (
         <Space size="middle">
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            size="small" 
-            onClick={() => handleRoleUpdate(record)}
-          >
-            设置角色
-          </Button>
-          <Button 
-            type={record.status === 'active' ? 'danger' : 'success'} 
-            icon={record.status === 'active' ? <CloseCircleOutlined /> : <CheckCircleOutlined />} 
-            size="small" 
-            onClick={() => handleToggleBan(record)}
-          >
-            {record.status === 'active' ? '封禁' : '解封'}
-          </Button>
-          <Button 
-            type="default" 
-            icon={<LockOutlined />} 
-            size="small" 
-            onClick={() => handleResetPassword(record)}
-          >
-            重置密码
-          </Button>
-        </Space>
+              <Button 
+                type="primary" 
+                icon={<EditOutlined />} 
+                size="small" 
+                onClick={() => handleRoleUpdate(record)}
+              >
+                角色
+              </Button>
+              <Button 
+                type={record.status === 'active' ? 'danger' : 'success'} 
+                icon={record.status === 'active' ? <CloseCircleOutlined /> : <CheckCircleOutlined />} 
+                size="small" 
+                onClick={() => handleToggleBan(record)}
+              >
+                {record.status === 'active' ? '封禁' : '解封'}
+              </Button>
+              <Button 
+                type="default" 
+                icon={<LockOutlined />} 
+                size="small" 
+                onClick={() => handleResetPassword(record)}
+              >
+                密码
+              </Button>
+              <Button 
+                type="danger" 
+                icon={<DeleteOutlined />} 
+                size="small" 
+                onClick={() => handleDeleteUser(record)}
+              >
+                删除
+              </Button>
+            </Space>
       )
     }
   ]
@@ -215,6 +247,34 @@ const UserManagement = () => {
     })
   }
 
+  // 处理删除用户
+  const handleDeleteUser = (user) => {
+    Modal.confirm({
+      title: '确认删除用户',
+      content: `确定要删除用户 ${user.username} 吗？此操作不可恢复！`,
+      okText: '确定',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        setLoading(true)
+        try {
+          const response = await adminAPI.deleteUser(user.id)
+          if (response.success) {
+            message.success('用户删除成功')
+            fetchUsers() // 刷新用户列表
+          } else {
+            message.error(response.message || '删除用户失败')
+          }
+        } catch (error) {
+          console.error('删除用户失败:', error)
+          message.error('删除用户失败')
+        } finally {
+          setLoading(false)
+        }
+      }
+    })
+  }
+
   // 处理模态框确认
   const handleModalOk = async () => {
     try {
@@ -242,8 +302,8 @@ const UserManagement = () => {
         }
       }
     } catch (error) {
-      console.error('处理模态框确认失败:', error)
-      message.error('操作失败')
+      console.error('处理模态框确认失败:', error.response?.data || error)
+      message.error(error.response?.data?.message || '操作失败')
     } finally {
       setLoading(false)
     }
@@ -310,6 +370,8 @@ const UserManagement = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 1200 }}
+          bordered
         />
       </Card>
 

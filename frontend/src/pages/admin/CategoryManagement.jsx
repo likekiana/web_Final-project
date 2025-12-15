@@ -165,8 +165,8 @@ const CategoryManagement = () => {
           fetchCategories()
         }
       } catch (error) {
-        console.error('Failed to save category:', error)
-        message.error(isEditMode ? '板块更新失败' : '板块创建失败')
+        console.error('Failed to save category:', error.response?.data || error)
+        message.error(error.response?.data?.message || (isEditMode ? '板块更新失败' : '板块创建失败'))
       } finally {
         setLoading(false)
       }

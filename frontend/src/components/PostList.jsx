@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Card, List, Typography, Avatar, Button, Tag, Space, Pagination, Select, Row, Col, Input, Form, message } from 'antd'
-import { LikeOutlined, CommentOutlined, EyeOutlined, ArrowUpOutlined, ArrowDownOutlined, SearchOutlined, UserOutlined, StarOutlined } from '@ant-design/icons'
+import { Card, List, Typography, Avatar, Button, Tag, Space, Pagination, Select, Row, Col, Input, Form, message, AutoComplete } from 'antd'
+import { LikeOutlined, CommentOutlined, EyeOutlined, ArrowUpOutlined, ArrowDownOutlined, SearchOutlined, UserOutlined, StarOutlined, BulbOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 
 // 导入API服务
-import { categoryAPI, favoriteAPI } from '../services/api'
+import { categoryAPI, favoriteAPI, aiAPI } from '../services/api'
 
 const { Title, Paragraph, Text } = Typography
 const { Option } = Select
@@ -21,6 +21,10 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
   const [favoritedPosts, setFavoritedPosts] = useState({})
   // 正在收藏/取消收藏的帖子id集合
   const [favoritingPosts, setFavoritingPosts] = useState(new Set())
+  // AI搜索建议
+  const [searchSuggestions, setSearchSuggestions] = useState([])
+  // 搜索加载状态
+  const [searchLoading, setSearchLoading] = useState(false)
 
   // 当category属性变化时，更新selectedCategory状态
   useEffect(() => {
@@ -96,8 +100,44 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
     }
   }
 
+  // 获取AI搜索建议
+  const getSearchSuggestions = async (value) => {
+    if (!value.trim()) {
+      setSearchSuggestions([])
+      return
+    }
+
+    try {
+      setSearchLoading(true)
+      const response = await aiAPI.enhancedSearch({
+        query: value,
+        category: selectedCategory
+      })
+      if (response.success && response.data) {
+        setSearchSuggestions(response.data.suggestions || [])
+      } else {
+        setSearchSuggestions([])
+      }
+    } catch (error) {
+      console.error('Failed to get search suggestions:', error)
+      setSearchSuggestions([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
   const handleSearch = (value) => {
     setKeyword(value)
+  }
+
+  const handleSearchChange = (value) => {
+    setKeyword(value)
+    // 延迟获取搜索建议，减少API调用次数
+    const timer = setTimeout(() => {
+      getSearchSuggestions(value)
+    }, 500)
+
+    return () => clearTimeout(timer)
   }
 
   // 检查帖子收藏状态
@@ -175,17 +215,31 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
           <Row gutter={[16, 16]} align="middle">
             {/* 关键词搜索 */}
             <Col xs={24} sm={12} md={8}>
-              <Text strong>关键词搜索：</Text>
-              <Search
-                placeholder="请输入关键词"
-                allowClear
-                enterButton={<SearchOutlined />}
-                size="middle"
-                onSearch={handleSearch}
-                onChange={(e) => setKeyword(e.target.value)}
-                value={keyword}
-                style={{ width: 300, marginLeft: 8 }}
-              />
+              <Text strong>智能搜索：</Text>
+              <div style={{ display: 'flex', alignItems: 'center', marginLeft: 8 }}>
+                <AutoComplete
+                  options={searchSuggestions.map(suggestion => ({
+                    label: suggestion,
+                    value: suggestion
+                  }))}
+                  style={{ width: 300 }}
+                  onSearch={handleSearch}
+                  onSelect={handleSearch}
+                  onChange={handleSearchChange}
+                  loading={searchLoading}
+                >
+                  <Input.Search
+                    placeholder="请输入关键词（支持自然语言，如'如何办理校园卡'）"
+                    allowClear
+                    enterButton={<SearchOutlined />}
+                    size="middle"
+                    value={keyword}
+                  />
+                </AutoComplete>
+                <Tag color="blue" icon={<BulbOutlined />} style={{ marginLeft: 8 }}>
+                  AI增强
+                </Tag>
+              </div>
             </Col>
             
             {/* 板块筛选 */}
@@ -259,8 +313,11 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                 <Link to={`/posts/${post.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
                   <Space>
                     <Title level={4} style={{ margin: 0 }}>{post.title}</Title>
+                    {post.is_sticky && <Tag color="red">置顶</Tag>}
+                    {post.is_essential && <Tag color="purple">精华</Tag>}
                     {post.type === 'trade' && <Tag color="orange">交易</Tag>}
                     {post.type === 'advertisement' && <Tag color="red">广告</Tag>}
+                    {post.type === 'anonymous' && <Tag color="gray">匿名</Tag>}
                   </Space>
                 </Link>
               }
@@ -275,9 +332,9 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
               
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
                 <Space>
-                  <Avatar icon={<UserOutlined />} src={post.user?.avatar} size={32} />
+                  <Avatar icon={<UserOutlined />} src={post.type === 'anonymous' ? null : post.user?.avatar} size={32} />
                   <div>
-                    <Text strong>{post.user?.username}</Text>
+                    <Text strong>{post.type === 'anonymous' ? '匿名用户' : post.user?.username}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       {new Date(post.created_at).toLocaleString()}

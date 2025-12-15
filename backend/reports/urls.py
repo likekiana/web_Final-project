@@ -14,8 +14,8 @@ urlpatterns = [
     path('', ReportCreateView.as_view(), name='report-create'),
     
     # 帖子举报路由
-    path('posts/<int:post_id>/report', PostReportCreateView.as_view(), name='post-report'),
+    path('posts/<int:post_id>/report/', PostReportCreateView.as_view(), name='post-report'),
     
     # 评论举报路由
-    path('comments/<int:comment_id>/report', CommentReportCreateView.as_view(), name='comment-report'),
+    path('comments/<int:comment_id>/report/', CommentReportCreateView.as_view(), name='comment-report'),
 ]

@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'favorites',
     'follows',
     'browsing_history',
+    'ai_audit',
+    'ai_assistant',
 ]
 
 # 中间件配置

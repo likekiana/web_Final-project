@@ -18,19 +18,19 @@ class UserSerializer(serializers.ModelSerializer):
     )
     
     # 只读字段
-    post_count = serializers.IntegerField(read_only=True)
-    comment_count = serializers.IntegerField(read_only=True)
+    postCount = serializers.IntegerField(source='post_count', read_only=True)
+    commentCount = serializers.IntegerField(source='comment_count', read_only=True)
     reputation = serializers.IntegerField(read_only=True)
-    created_at = serializers.DateTimeField(read_only=True)
-    updated_at = serializers.DateTimeField(read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
     
     class Meta:
         model = User
         fields = (
             'id', 'username', 'email', 'password', 'avatar', 'bio',
-            'role', 'status', 'reputation', 'post_count', 'comment_count',
+            'role', 'status', 'reputation', 'postCount', 'commentCount',
             'is_active', 'is_staff', 'is_superuser',
-            'created_at', 'updated_at'
+            'createdAt', 'updatedAt'
         )
     
     def validate_password(self, value):
@@ -73,6 +73,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
     # 添加可写入的avatar字段，用于头像上传
     avatar_file = serializers.ImageField(write_only=True, required=False, allow_null=True)
     
+    # 将下划线命名转换为驼峰命名
+    postCount = serializers.IntegerField(source='post_count', read_only=True)
+    commentCount = serializers.IntegerField(source='comment_count', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    
     def get_avatar(self, obj):
         """获取avatar的完整URL"""
         if obj.avatar and hasattr(obj.avatar, 'url'):
@@ -92,19 +97,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'username', 'email', 'avatar', 'avatar_file', 'bio',
-            'role', 'reputation', 'post_count', 'comment_count',
-            'created_at'
+            'role', 'reputation', 'postCount', 'commentCount',
+            'createdAt'
         )
-        read_only_fields = ('email', 'role', 'reputation', 'post_count', 'comment_count', 'created_at')
+        read_only_fields = ('email', 'role', 'reputation', 'postCount', 'commentCount', 'createdAt')
 
 
 class UserListSerializer(serializers.ModelSerializer):
     """用户列表序列化器"""
     
+    # 将下划线命名转换为驼峰命名
+    postCount = serializers.IntegerField(source='post_count', read_only=True)
+    commentCount = serializers.IntegerField(source='comment_count', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    
     class Meta:
         model = User
         fields = (
             'id', 'username', 'email', 'avatar', 'role', 'status',
-            'reputation', 'post_count', 'comment_count',
-            'created_at'
+            'reputation', 'postCount', 'commentCount',
+            'createdAt'
         )

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Form, Input, Select, Button, Upload, Card, Typography, message } from 'antd'
-import { UploadOutlined, FileImageOutlined } from '@ant-design/icons'
+import { Form, Input, Select, Button, Upload, Card, Typography, message, Row, Col } from 'antd'
+import { UploadOutlined, FileImageOutlined, BulbOutlined, EditOutlined, AlignLeftOutlined, ExpandOutlined } from '@ant-design/icons'
 
 // 导入API服务
-import { categoryAPI, postAPI } from '../services/api'
+import { categoryAPI, postAPI, aiAPI } from '../services/api'
 
 const { Title } = Typography
 const { TextArea } = Input
@@ -12,6 +12,7 @@ const { Option } = Select
 const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submitText = '发布帖子' }) => {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
   const [previewVisible, setPreviewVisible] = useState(false)
   const [previewImage, setPreviewImage] = useState('')
   const [categories, setCategories] = useState([])
@@ -23,7 +24,7 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
         const response = await categoryAPI.getCategories()
         console.log('Categories response:', response)
         
-        // 正确处理API响应格式：{success: true, message: '获取成功', data: [...板块数据...]}
+        // 正确处理API响应格式：{success: true, message: '获取成功', data: [...板块数据...]} 
         const categoriesData = response.success ? (Array.isArray(response.data) ? response.data : []) : []
         
         setCategories(categoriesData)
@@ -38,6 +39,86 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
     fetchCategories()
   }, [])
 
+  // AI辅助功能 - 生成标题
+  const handleGenerateTitle = async () => {
+    const content = form.getFieldValue('content')
+    if (!content) {
+      message.warning('请先输入帖子内容')
+      return
+    }
+
+    try {
+      setAiLoading(true)
+      const response = await aiAPI.generateTitle({ content })
+      if (response.success && response.data) {
+        form.setFieldValue('title', response.data.title)
+        message.success('标题生成成功')
+      } else {
+        message.error('标题生成失败，请重试')
+      }
+    } catch (error) {
+      console.error('Failed to generate title:', error.response?.data || error.message || error)
+      message.error('标题生成失败，请稍后重试')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  // AI辅助功能 - 生成摘要
+  const handleGenerateSummary = async () => {
+    const content = form.getFieldValue('content')
+    if (!content) {
+      message.warning('请先输入帖子内容')
+      return
+    }
+
+    try {
+      setAiLoading(true)
+      const response = await aiAPI.generateSummary({ content })
+      if (response.success && response.data) {
+        // 可以将摘要用于其他用途，比如SEO描述
+        message.success('摘要生成成功')
+        console.log('Generated summary:', response.data.summary)
+      } else {
+        message.error('摘要生成失败，请重试')
+      }
+    } catch (error) {
+      console.error('Failed to generate summary:', error)
+      message.error('摘要生成失败，请稍后重试')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  // AI辅助功能 - 扩展内容
+  const handleExpandContent = async () => {
+    const keywords = form.getFieldValue('title')?.split(' ').filter(word => word.length > 1) || []
+    const categoryId = form.getFieldValue('categoryId')
+    const categoryName = categories.find(cat => cat.id === categoryId)?.name || '其他'
+    
+    if (keywords.length === 0) {
+      message.warning('请先输入帖子标题或关键词')
+      return
+    }
+
+    try {
+          setAiLoading(true)
+          const response = await aiAPI.expandContent({ keywords, category: categoryName })
+          if (response.success && response.data) {
+            const currentContent = form.getFieldValue('content') || ''
+            form.setFieldValue('content', currentContent + '\n\n' + response.data.expanded_content)
+            message.success('内容扩展成功')
+          } else {
+            message.error('内容扩展失败，请重试')
+          }
+        } catch (error) {
+          console.error('Failed to expand content:', error)
+          message.error('内容扩展失败，请稍后重试')
+        } finally {
+          setAiLoading(false)
+        }
+  }
+
   const handleSubmit = async (values) => {
     setLoading(true)
     try {
@@ -46,7 +127,8 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
         title: values.title,
         content: values.content,
         category_id: values.categoryId, // 使用后端期望的字段名
-        media_files: values.mediaFiles || [] // 媒体文件数组，支持图片和视频
+        media_files: values.mediaFiles || [], // 媒体文件数组，支持图片和视频
+        type: values.isAnonymous ? 'anonymous' : 'normal' // 帖子类型，匿名或普通
       }
       
       // 调用API创建帖子
@@ -101,6 +183,45 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
         >
           <Input placeholder="请输入帖子标题" size="large" />
         </Form.Item>
+
+        {/* AI辅助功能区 */}
+        <Card title={<><BulbOutlined /> AI 帖子创作辅助</>} size="small" style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]}>
+            <Col span={8}>
+              <Button 
+                type="default" 
+                icon={<EditOutlined />} 
+                onClick={handleGenerateTitle}
+                loading={aiLoading}
+                block
+              >
+                AI生成标题
+              </Button>
+            </Col>
+            <Col span={8}>
+              <Button 
+                type="default" 
+                icon={<AlignLeftOutlined />} 
+                onClick={handleGenerateSummary}
+                loading={aiLoading}
+                block
+              >
+                AI生成摘要
+              </Button>
+            </Col>
+            <Col span={8}>
+              <Button 
+                type="default" 
+                icon={<ExpandOutlined />} 
+                onClick={handleExpandContent}
+                loading={aiLoading}
+                block
+              >
+                AI扩展内容
+              </Button>
+            </Col>
+          </Row>
+        </Card>
 
         <Form.Item
           name="categoryId"
@@ -158,6 +279,17 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
               </Button>
             </div>
           )}
+        </Form.Item>
+
+        <Form.Item
+          name="isAnonymous"
+          valuePropName="checked"
+          initialValue={false}
+        >
+          <div>
+            <input type="checkbox" />
+            <span style={{ marginLeft: 8 }}>匿名发帖（真情流露区）</span>
+          </div>
         </Form.Item>
 
         <Form.Item style={{ textAlign: 'right' }}>

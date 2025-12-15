@@ -77,10 +77,10 @@ class UserLoginView(generics.GenericAPIView):
         if user.status != User.Status.ACTIVE:
             return Response({
                 "success": False,
-                "message": "账号已被封禁",
+                "message": "账号已封禁，请联系管理员",
                 "error": {
                     "code": 403,
-                    "details": "账号已被封禁"
+                    "details": "账号已封禁，请联系管理员"
                 }
             }, status=status.HTTP_403_FORBIDDEN)
         
@@ -360,6 +360,38 @@ class UserPasswordResetView(generics.UpdateAPIView):
             "message": "密码重置成功",
             "data": serializer.data
         })
+
+
+class UserDeleteView(generics.DestroyAPIView):
+    """删除用户视图（管理员）"""
+    
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    lookup_field = 'id'
+    
+    def destroy(self, request, *args, **kwargs):
+        """删除用户"""
+        instance = self.get_object()
+        
+        # 防止删除超级管理员
+        if instance.role == User.Role.SUPER_ADMIN:
+            return Response({
+                "success": False,
+                "message": "无法删除超级管理员",
+                "error": {
+                    "code": 403,
+                    "details": "无法删除超级管理员"
+                }
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # 执行删除操作
+        self.perform_destroy(instance)
+        
+        return Response({
+            "success": True,
+            "message": "用户删除成功"
+        }, status=status.HTTP_200_OK)
 
 
 class UserPostsView(generics.ListAPIView):

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input, Upload, Tabs, Empty } from 'antd'
 import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined, UploadOutlined, EyeOutlined, DeleteOutlined, StarOutlined } from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
-import { authAPI, userAPI, historyAPI, favoriteAPI } from '../services/api'
+import { authAPI, userAPI, historyAPI, favoriteAPI, followAPI } from '../services/api'
 
 const { Title, Paragraph, Text } = Typography
 
@@ -12,9 +12,13 @@ const Profile = () => {
   const [posts, setPosts] = useState([])
   const [browsingHistory, setBrowsingHistory] = useState([])
   const [favorites, setFavorites] = useState([])
+  const [following, setFollowing] = useState([])
+  const [followers, setFollowers] = useState([])
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [favoritesLoading, setFavoritesLoading] = useState(false)
+  const [followingLoading, setFollowingLoading] = useState(false)
+  const [followersLoading, setFollowersLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [form] = Form.useForm()
   const [saveLoading, setSaveLoading] = useState(false)
@@ -86,19 +90,128 @@ const Profile = () => {
     setFavoritesLoading(true)
     try {
       const response = await favoriteAPI.getFavorites()
+      let favoritesData = []
+      
+      // 处理不同的响应格式
       if (response.success) {
-        // 处理分页情况：如果返回的是分页响应，使用 results 字段；否则直接使用 data
-        const favoritesData = response.data?.results || response.data || []
-        setFavorites(favoritesData)
+        // 自定义响应格式，带success字段
+        if (response.data?.results) {
+          // 分页响应
+          favoritesData = response.data.results
+        } else if (Array.isArray(response.data)) {
+          // 直接返回数组
+          favoritesData = response.data
+        } else {
+          // 其他格式
+          favoritesData = response.data || []
+        }
       } else if (response.results) {
-        // 处理 DRF 标准分页响应（success 字段可能不存在）
-        setFavorites(response.results)
+        // DRF标准分页响应（没有success字段）
+        favoritesData = response.results
+      } else if (Array.isArray(response)) {
+        // 直接返回数组
+        favoritesData = response
       }
+      
+      setFavorites(favoritesData)
     } catch (error) {
       console.error('Failed to fetch favorites:', error)
       message.error('获取收藏夹失败')
     } finally {
       setFavoritesLoading(false)
+    }
+  }
+
+  // 获取关注列表
+  const fetchFollowing = async () => {
+    setFollowingLoading(true)
+    try {
+      const response = await followAPI.getFollowing()
+      let followingData = []
+      
+      // 处理不同的响应格式
+      if (response.success) {
+        // 自定义响应格式，带success字段
+        if (response.data?.results) {
+          // 分页响应
+          followingData = response.data.results
+        } else if (Array.isArray(response.data)) {
+          // 直接返回数组
+          followingData = response.data
+        } else {
+          // 其他格式
+          followingData = response.data || []
+        }
+      } else if (response.results) {
+        // DRF标准分页响应（没有success字段）
+        followingData = response.results
+      } else if (Array.isArray(response)) {
+        // 直接返回数组
+        followingData = response
+      }
+      
+      setFollowing(followingData)
+    } catch (error) {
+      console.error('Failed to fetch following list:', error)
+      message.error('获取关注列表失败')
+    } finally {
+      setFollowingLoading(false)
+    }
+  }
+
+  // 获取粉丝列表
+  const fetchFollowers = async () => {
+    setFollowersLoading(true)
+    try {
+      const response = await followAPI.getFollowers()
+      let followersData = []
+      
+      // 处理不同的响应格式
+      if (response.success) {
+        // 自定义响应格式，带success字段
+        if (response.data?.results) {
+          // 分页响应
+          followersData = response.data.results
+        } else if (Array.isArray(response.data)) {
+          // 直接返回数组
+          followersData = response.data
+        } else {
+          // 其他格式
+          followersData = response.data || []
+        }
+      } else if (response.results) {
+        // DRF标准分页响应（没有success字段）
+        followersData = response.results
+      } else if (Array.isArray(response)) {
+        // 直接返回数组
+        followersData = response
+      }
+      
+      setFollowers(followersData)
+    } catch (error) {
+      console.error('Failed to fetch followers list:', error)
+      message.error('获取粉丝列表失败')
+    } finally {
+      setFollowersLoading(false)
+    }
+  }
+
+  // 关注/取消关注用户
+  const handleToggleFollow = async (userId) => {
+    try {
+      const response = await followAPI.toggleFollow(userId)
+      if (response.success || response.status === 'following' || response.status === 'unfollowed') {
+        // 更新关注列表和粉丝列表
+        if (activeTab === 'following') {
+          fetchFollowing()
+        } else if (activeTab === 'followers') {
+          fetchFollowers()
+        }
+        message.success(response.message || (response.status === 'following' ? '关注成功' : '取消关注成功'))
+      }
+    } catch (error) {
+      console.error('Failed to toggle follow:', error)
+      message.error('操作失败，请重试')
     }
   }
 
@@ -108,6 +221,10 @@ const Profile = () => {
       fetchBrowsingHistory()
     } else if (activeTab === 'favorites') {
       fetchFavorites()
+    } else if (activeTab === 'following') {
+      fetchFollowing()
+    } else if (activeTab === 'followers') {
+      fetchFollowers()
     }
   }, [activeTab])
 
@@ -273,15 +390,15 @@ const Profile = () => {
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text>注册时间：</Text>
-                      <Text type="secondary">{new Date(user.created_at).toLocaleDateString()}</Text>
+                      <Text type="secondary">{new Date(user.createdAt).toLocaleDateString()}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text>发帖数：</Text>
-                      <Text strong>{user.post_count || 0}</Text>
+                      <Text strong>{user.postCount || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text>评论数：</Text>
-                      <Text strong>{user.comment_count || 0}</Text>
+                      <Text strong>{user.commentCount || 0}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text>获赞数：</Text>
@@ -501,6 +618,132 @@ const Profile = () => {
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                           description={
                             <span>暂无收藏记录</span>
+                          }
+                        />
+                      )}
+                    </Spin>
+                  </Card>
+                ),
+              },
+              {
+                key: 'following',
+                label: '我的关注',
+                children: (
+                  <Card hoverable>
+                    <Spin spinning={followingLoading}>
+                      {following.length > 0 ? (
+                        <List
+                          grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
+                          dataSource={following}
+                          renderItem={(item) => {
+                            // 处理不同的数据结构
+                            const userData = item.following || item.user || item
+                            return (
+                              <List.Item
+                                actions={[
+                                  <Space size="middle">
+                                    <Button
+                                      type={item.is_following ? 'default' : 'primary'}
+                                      size="small"
+                                      onClick={() => handleToggleFollow(userData.id)}
+                                    >
+                                      {item.is_following ? '取消关注' : '关注'}
+                                    </Button>
+                                  </Space>
+                                ]}
+                                style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
+                              >
+                                <List.Item.Meta
+                                  avatar={<Avatar icon={<UserOutlined />} src={userData.avatar} />}
+                                  title={
+                                    <Link to={`/users/${userData.id}`}>{userData.username}</Link>
+                                  }
+                                  description={
+                                    <div>
+                                      <Paragraph ellipsis={{ rows: 1 }}>{userData.bio || '暂无个人简介'}</Paragraph>
+                                      <div style={{ display: 'flex', gap: 16 }}>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          发帖数: {userData.postCount || 0}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          获赞数: {userData.reputation || 0}
+                                        </Text>
+                                      </div>
+                                    </div>
+                                  }
+                                />
+                              </List.Item>
+                            )
+                          }}
+                        />
+                      ) : (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={
+                            <span>暂无关注记录</span>
+                          }
+                        />
+                      )}
+                    </Spin>
+                  </Card>
+                ),
+              },
+              {
+                key: 'followers',
+                label: '我的粉丝',
+                children: (
+                  <Card hoverable>
+                    <Spin spinning={followersLoading}>
+                      {followers.length > 0 ? (
+                        <List
+                          grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
+                          dataSource={followers}
+                          renderItem={(item) => {
+                            // 处理不同的数据结构
+                            const userData = item.follower || item.user || item
+                            return (
+                              <List.Item
+                                actions={[
+                                  <Space size="middle">
+                                    <Button
+                                      type={item.is_following ? 'default' : 'primary'}
+                                      size="small"
+                                      onClick={() => handleToggleFollow(userData.id)}
+                                    >
+                                      {item.is_following ? '取消关注' : '关注'}
+                                    </Button>
+                                  </Space>
+                                ]}
+                                style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
+                              >
+                                <List.Item.Meta
+                                  avatar={<Avatar icon={<UserOutlined />} src={userData.avatar} />}
+                                  title={
+                                    <Link to={`/users/${userData.id}`}>{userData.username}</Link>
+                                  }
+                                  description={
+                                    <div>
+                                      <Paragraph ellipsis={{ rows: 1 }}>{userData.bio || '暂无个人简介'}</Paragraph>
+                                      <div style={{ display: 'flex', gap: 16 }}>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          发帖数: {userData.postCount || 0}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          获赞数: {userData.reputation || 0}
+                                        </Text>
+                                      </div>
+                                    </div>
+                                  }
+                                />
+                              </List.Item>
+                            )
+                          }}
+                        />
+                      ) : (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={
+                            <span>暂无粉丝记录</span>
                           }
                         />
                       )}

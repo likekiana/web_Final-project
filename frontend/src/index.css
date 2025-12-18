@@ -7,6 +7,28 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   background-color: #f0f2f5;
+  transition: background-color 0.3s ease;
+}
+
+/* 深色主题样式 */
+body.dark-theme {
+  background-color: #000000;
+}
+
+.dark-theme .app-content {
+  background-color: #000000;
+}
+
+.dark-theme .app-container {
+  background: #141414;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.dark-theme .app-footer {
+  background-color: #141414;
+  border-top-color: #333333;
+  color: #aaaaaa;
 }
 
 .app-layout {

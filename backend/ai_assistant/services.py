@@ -17,6 +17,9 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
 
+# 导入Post模型
+from content.models import Post
+
 from .models import KnowledgeBase, AIResponseLog
 
 # DeepSeek API配置
@@ -122,7 +125,7 @@ class AIAssistantService:
     
     def get_knowledge_answer(self, user_question):
         """
-        从知识库中获取答案
+        从知识库和帖子中获取答案
         
         Args:
             user_question: 用户输入的问题
@@ -132,11 +135,59 @@ class AIAssistantService:
         """
         start_time = time.time()
         
-        # 获取所有活跃的知识库条目
+        # 1. 首先搜索帖子数据库
+        best_post_match = None
+        highest_post_similarity = 0.0
+        
+        # 获取所有正常状态的帖子
+        posts = Post.objects.filter(status='normal')
+        
+        # 计算每个帖子的相似度
+        for post in posts:
+            # 计算与标题的相似度
+            title_similarity = self._calculate_similarity(user_question, post.title)
+            # 计算与内容的相似度
+            content_similarity = self._calculate_similarity(user_question, post.content)
+            # 综合相似度（标题权重更高）
+            total_similarity = (title_similarity * 0.7) + (content_similarity * 0.3)
+            
+            # 如果相似度超过阈值，更新最佳匹配
+            if total_similarity > highest_post_similarity:
+                highest_post_similarity = total_similarity
+                best_post_match = post
+        
+        # 帖子相似度阈值
+        post_similarity_threshold = 0.4
+        
+        # 如果找到匹配的帖子且相似度超过阈值
+        if best_post_match and highest_post_similarity >= post_similarity_threshold:
+            # 生成基于帖子的回答
+            post_answer = f"根据帖子《{best_post_match.title}》：\n\n{best_post_match.content[:200]}...\n\n（答案来自帖子ID：{best_post_match.id}）"
+            
+            # 计算处理时间
+            processing_time = int((time.time() - start_time) * 1000)
+            
+            # 保存响应日志
+            AIResponseLog.objects.create(
+                user_input=user_question,
+                ai_response=post_answer,
+                response_type=AIResponseLog.ResponseType.POST_BASED,
+                similarity_score=highest_post_similarity,
+                processing_time=processing_time
+            )
+            
+            return {
+                'answer': post_answer,
+                'response_type': AIResponseLog.ResponseType.POST_BASED,
+                'similarity': highest_post_similarity,
+                'processing_time': processing_time
+            }
+        
+        # 2. 如果没有找到合适的帖子，再搜索知识库
         knowledge_items = KnowledgeBase.objects.filter(is_active=True)
         
-        best_match = None
-        highest_similarity = 0.0
+        best_knowledge_match = None
+        highest_knowledge_similarity = 0.0
         
         # 计算每个知识库条目的相似度
         for item in knowledge_items:
@@ -153,28 +204,29 @@ class AIAssistantService:
                 question_similarity = max(question_similarity, 0.5)
             
             # 如果相似度超过阈值，更新最佳匹配
-            if question_similarity > highest_similarity:
-                highest_similarity = question_similarity
-                best_match = item
+            if question_similarity > highest_knowledge_similarity:
+                highest_knowledge_similarity = question_similarity
+                best_knowledge_match = item
         
-        # 相似度阈值
-        similarity_threshold = 0.3
+        # 知识库相似度阈值
+        knowledge_similarity_threshold = 0.3
         
         response_data = {
             'answer': '',
-            'similarity': highest_similarity,
+            'similarity': highest_knowledge_similarity,
             'response_type': AIResponseLog.ResponseType.KNOWLEDGE_BASE,
-            'knowledge_item': best_match
+            'knowledge_item': best_knowledge_match
         }
         
         # 如果找到匹配的知识库条目且相似度超过阈值
-        if best_match and highest_similarity >= similarity_threshold:
+        if best_knowledge_match and highest_knowledge_similarity >= knowledge_similarity_threshold:
             # 增加热度计数
-            best_match.increment_popularity()
-            response_data['answer'] = best_match.answer
+            best_knowledge_match.increment_popularity()
+            response_data['answer'] = f"{best_knowledge_match.answer}\n\n（答案来自知识库）"
         else:
-            # 没有找到匹配的知识库条目或相似度太低，使用AI生成回复
-            response_data['answer'] = self._generate_ai_response(user_question)
+            # 3. 没有找到匹配的帖子或知识库条目，使用AI生成回复
+            ai_answer = self._generate_ai_response(user_question)
+            response_data['answer'] = f"{ai_answer}\n\n（答案由AI生成）"
             response_data['response_type'] = AIResponseLog.ResponseType.AI_GENERATED
         
         # 计算处理时间

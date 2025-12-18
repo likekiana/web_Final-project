@@ -105,6 +105,7 @@ class AIResponseLog(models.Model):
     # 响应类型枚举
     class ResponseType(models.TextChoices):
         KNOWLEDGE_BASE = 'knowledge_base', _('知识库匹配')
+        POST_BASED = 'post_based', _('帖子匹配')
         AI_GENERATED = 'ai_generated', _('AI生成')
         ERROR = 'error', _('错误响应')
     

@@ -131,23 +131,28 @@ const Profile = () => {
       
       // 处理不同的响应格式
       if (response.success) {
-        // 自定义响应格式，带success字段
-        if (response.data?.results) {
-          // 分页响应
-          followingData = response.data.results
-        } else if (Array.isArray(response.data)) {
-          // 直接返回数组
+        // 非分页响应，直接返回带有success字段的对象
+        if (Array.isArray(response.data)) {
+          // response.data是直接的关注列表数组
           followingData = response.data
+        } else if (response.data?.data) {
+          // 特殊情况：response.data包含另一个data字段
+          followingData = response.data.data
         } else {
-          // 其他格式
-          followingData = response.data || []
+          followingData = []
         }
       } else if (response.results) {
-        // DRF标准分页响应（没有success字段）
-        followingData = response.results
-      } else if (Array.isArray(response)) {
-        // 直接返回数组
-        followingData = response
+        // 分页响应
+        if (response.results.success && response.results.data) {
+          // 分页响应中results字段包含带有success和data字段的对象
+          followingData = response.results.data
+        } else {
+          // DRF标准分页响应，results直接是数组
+          followingData = response.results
+        }
+      } else {
+        // 其他情况
+        followingData = []
       }
       
       setFollowing(followingData)
@@ -168,23 +173,28 @@ const Profile = () => {
       
       // 处理不同的响应格式
       if (response.success) {
-        // 自定义响应格式，带success字段
-        if (response.data?.results) {
-          // 分页响应
-          followersData = response.data.results
-        } else if (Array.isArray(response.data)) {
-          // 直接返回数组
+        // 非分页响应，直接返回带有success字段的对象
+        if (Array.isArray(response.data)) {
+          // response.data是直接的粉丝列表数组
           followersData = response.data
+        } else if (response.data?.data) {
+          // 特殊情况：response.data包含另一个data字段
+          followersData = response.data.data
         } else {
-          // 其他格式
-          followersData = response.data || []
+          followersData = []
         }
       } else if (response.results) {
-        // DRF标准分页响应（没有success字段）
-        followersData = response.results
-      } else if (Array.isArray(response)) {
-        // 直接返回数组
-        followersData = response
+        // 分页响应
+        if (response.results.success && response.results.data) {
+          // 分页响应中results字段包含带有success和data字段的对象
+          followersData = response.results.data
+        } else {
+          // DRF标准分页响应，results直接是数组
+          followersData = response.results
+        }
+      } else {
+        // 其他情况
+        followersData = []
       }
       
       setFollowers(followersData)
@@ -201,13 +211,11 @@ const Profile = () => {
     try {
       const response = await followAPI.toggleFollow(userId)
       if (response.success || response.status === 'following' || response.status === 'unfollowed') {
-        // 更新关注列表和粉丝列表
-        if (activeTab === 'following') {
-          fetchFollowing()
-        } else if (activeTab === 'followers') {
-          fetchFollowers()
-        }
-        message.success(response.message || (response.status === 'following' ? '关注成功' : '取消关注成功'))
+        // 无论当前在哪个选项卡，都更新关注列表和粉丝列表
+        // 这样下次切换到对应选项卡时就能看到最新数据
+        fetchFollowing()
+        fetchFollowers()
+        message.success(response.message || (response.data?.is_following ? '关注成功' : '取消关注成功'))
       }
     } catch (error) {
       console.error('Failed to toggle follow:', error)
@@ -748,6 +756,28 @@ const Profile = () => {
                         />
                       )}
                     </Spin>
+                  </Card>
+                ),
+              },
+              {
+                key: 'settings',
+                label: '账号设置',
+                children: (
+                  <Card hoverable>
+                    <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                      <Text type="secondary" style={{ fontSize: 16, marginBottom: 24, display: 'block' }}>
+                        进入账号设置中心管理您的账号信息和隐私设置
+                      </Text>
+                      <Link to="/settings">
+                        <Button
+                          type="primary"
+                          icon={<EditOutlined />}
+                          size="large"
+                        >
+                          前往设置中心
+                        </Button>
+                      </Link>
+                    </div>
                   </Card>
                 ),
               },

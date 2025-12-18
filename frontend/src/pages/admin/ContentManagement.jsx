@@ -16,6 +16,16 @@ const ContentManagement = () => {
   const [comments, setComments] = useState([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [commentsLoading, setCommentsLoading] = useState(false)
+  
+  // 编辑帖子相关状态
+  const [editModalVisible, setEditModalVisible] = useState(false)
+  const [editingPost, setEditingPost] = useState(null)
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    content: '',
+    category_id: '',
+    status: ''
+  })
 
   // 获取帖子列表
   const fetchPosts = async () => {
@@ -78,23 +88,71 @@ const ContentManagement = () => {
 
   // 筛选帖子
   const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchText.toLowerCase()) ||
-    (post.user && post.user.username.toLowerCase().includes(searchText.toLowerCase())) ||
-    (post.category && post.category.name.toLowerCase().includes(searchText.toLowerCase()))
+    (post.title && post.title.toLowerCase().includes(searchText.toLowerCase())) ||
+    (post.user && post.user.username && post.user.username.toLowerCase().includes(searchText.toLowerCase())) ||
+    (post.category && post.category.name && post.category.name.toLowerCase().includes(searchText.toLowerCase()))
   )
 
   // 筛选评论
   const filteredComments = comments.filter(comment => 
-    comment.content.toLowerCase().includes(searchText.toLowerCase()) ||
-    (comment.user && comment.user.username.toLowerCase().includes(searchText.toLowerCase())) ||
-    (comment.post && comment.post.title.toLowerCase().includes(searchText.toLowerCase()))
+    (comment.content && comment.content.toLowerCase().includes(searchText.toLowerCase())) ||
+    (comment.user && comment.user.username && comment.user.username.toLowerCase().includes(searchText.toLowerCase())) ||
+    (comment.post && comment.post.title && comment.post.title.toLowerCase().includes(searchText.toLowerCase()))
   )
+
+  // 处理编辑帖子
+  const handleEditPost = (post) => {
+    setEditingPost(post)
+    setEditFormData({
+      title: post.title || '',
+      content: post.content || '',
+      category_id: post.category?.id || '',
+      status: post.status || 'normal'
+    })
+    setEditModalVisible(true)
+  }
+
+  // 处理表单数据变化
+  const handleEditFormChange = (field, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  // 处理编辑表单提交
+  const handleEditSubmit = async () => {
+    if (!editingPost) return
+    
+    setLoading(true)
+    try {
+      const response = await adminAPI.updatePost(editingPost.id, editFormData)
+      if (response.success) {
+        message.success('帖子编辑成功')
+        setEditModalVisible(false)
+        fetchPosts() // 重新获取帖子列表
+      }
+    } catch (error) {
+      console.error('Failed to edit post:', error)
+      message.error('帖子编辑失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 处理关闭编辑模态框
+  const handleEditModalClose = () => {
+    setEditModalVisible(false)
+    setEditingPost(null)
+  }
 
   // 帖子状态标签配置
   const getPostStatusTag = (status) => {
     switch (status) {
       case 'normal':
         return <Tag color="green">正常</Tag>
+      case 'hidden':
+        return <Tag color="gray">隐藏</Tag>
       case 'active':
         return <Tag color="green">活跃</Tag>
       case 'pending':
@@ -116,12 +174,14 @@ const ContentManagement = () => {
       title: '帖子ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80
+      width: 80,
+      ellipsis: true
     },
     {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
       render: (text, record) => (
         <Space>
           <EyeOutlined />
@@ -133,41 +193,50 @@ const ContentManagement = () => {
       title: '板块',
       dataIndex: 'category',
       key: 'category',
+      width: 120,
       render: (category) => <Tag color="blue">{category?.name || '未分类'}</Tag>
     },
     {
       title: '作者',
       dataIndex: 'user',
       key: 'user',
-      render: (user) => <>{user?.username || '未知'}</>
+      width: 120,
+      render: (user) => <>{user?.username || '未知'}</>,
+      ellipsis: true
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
+      width: 100,
       render: (text) => getPostStatusTag(text)
     },
     {
       title: '点赞数',
       dataIndex: 'likes_count',
-      key: 'likes_count'
+      key: 'likes_count',
+      width: 80
     },
     {
       title: '评论数',
       dataIndex: 'comments_count',
-      key: 'comments_count'
+      key: 'comments_count',
+      width: 80
     },
     {
       title: '发布时间',
       dataIndex: 'created_at',
-      key: 'created_at'
+      key: 'created_at',
+      width: 180,
+      ellipsis: true
     },
     {
       title: '操作',
       key: 'action',
+      width: 240,
       render: (_, record) => (
         <Space size="middle">
-          <Button type="primary" icon={<EditOutlined />} size="small">
+          <Button type="primary" icon={<EditOutlined />} size="small" onClick={() => handleEditPost(record)}>
             编辑
           </Button>
           {record.is_sticky ? (
@@ -208,6 +277,7 @@ const ContentManagement = () => {
       title: '所属帖子',
       dataIndex: 'postTitle',
       key: 'postTitle',
+      ellipsis: true,
       render: (text, record) => (
         <Space>
           <EyeOutlined />
@@ -218,26 +288,29 @@ const ContentManagement = () => {
     {
       title: '评论者',
       dataIndex: 'username',
-      key: 'username'
+      key: 'username',
+      width: 120,
+      ellipsis: true
     },
     {
       title: '点赞数',
       dataIndex: 'likesCount',
-      key: 'likesCount'
+      key: 'likesCount',
+      width: 80
     },
     {
       title: '发布时间',
       dataIndex: 'createdAt',
-      key: 'createdAt'
+      key: 'createdAt',
+      width: 180,
+      ellipsis: true
     },
     {
       title: '操作',
       key: 'action',
+      width: 80,
       render: (_, record) => (
         <Space size="middle">
-          <Button type="primary" icon={<EditOutlined />} size="small">
-            编辑
-          </Button>
           <Button type="danger" icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record.id, 'comment')}>
             删除
           </Button>
@@ -341,6 +414,54 @@ const ContentManagement = () => {
         </Space>
       </Card>
 
+      {/* 编辑帖子模态框 */}
+      <Modal
+        title="编辑帖子"
+        open={editModalVisible}
+        onOk={handleEditSubmit}
+        onCancel={handleEditModalClose}
+        confirmLoading={loading}
+        width={600}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* 标题输入 */}
+          <div>
+            <Typography.Text strong>标题</Typography.Text>
+            <Input
+              value={editFormData.title}
+              onChange={(e) => handleEditFormChange('title', e.target.value)}
+              placeholder="请输入帖子标题"
+              style={{ marginTop: 8 }}
+            />
+          </div>
+
+          {/* 内容输入 */}
+          <div>
+            <Typography.Text strong>内容</Typography.Text>
+            <Input.TextArea
+              value={editFormData.content}
+              onChange={(e) => handleEditFormChange('content', e.target.value)}
+              placeholder="请输入帖子内容"
+              rows={6}
+              style={{ marginTop: 8 }}
+            />
+          </div>
+
+          {/* 状态选择 */}
+          <div>
+            <Typography.Text strong>状态</Typography.Text>
+            <Select
+              value={editFormData.status}
+              onChange={(value) => handleEditFormChange('status', value)}
+              style={{ width: '100%', marginTop: 8 }}
+            >
+              <Option value="normal">正常</Option>
+              <Option value="hidden">隐藏</Option>
+            </Select>
+          </div>
+        </div>
+      </Modal>
+
       {/* 标签页切换帖子和评论 */}
       <Tabs
         activeKey={selectedTab}
@@ -350,26 +471,34 @@ const ContentManagement = () => {
             key: 'posts',
             label: '帖子管理',
             children: (
-              <Table
-                columns={postColumns}
-                dataSource={filteredPosts}
-                rowKey="id"
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-              />
+              <div style={{ overflowX: 'auto' }}>
+                <Table
+                  columns={postColumns}
+                  dataSource={filteredPosts}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 10 }}
+                  scroll={{ x: 'max-content' }}
+                  style={{ minWidth: '800px' }}
+                />
+              </div>
             ),
           },
           {
             key: 'comments',
             label: '评论管理',
             children: (
-              <Table
-                columns={commentColumns}
-                dataSource={filteredComments}
-                rowKey="id"
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-              />
+              <div style={{ overflowX: 'auto' }}>
+                <Table
+                  columns={commentColumns}
+                  dataSource={filteredComments}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 10 }}
+                  scroll={{ x: 'max-content' }}
+                  style={{ minWidth: '800px' }}
+                />
+              </div>
             ),
           },
         ]}

@@ -17,9 +17,6 @@ class Category(models.Model):
     icon = models.CharField(_('板块图标'), max_length=50, default='default')
     color = models.CharField(_('板块颜色'), max_length=20, default='#1890ff')
     
-    # 统计信息
-    post_count = models.IntegerField(_('帖子数量'), default=0)
-    
     # 排序
     order = models.IntegerField(_('排序顺序'), default=0, db_index=True)
     
@@ -34,16 +31,6 @@ class Category(models.Model):
     
     def __str__(self):
         return self.name
-    
-    def increment_post_count(self):
-        """增加帖子数量"""
-        self.post_count = F('post_count') + 1
-        self.save(update_fields=['post_count'])
-    
-    def decrement_post_count(self):
-        """减少帖子数量"""
-        self.post_count = F('post_count') - 1
-        self.save(update_fields=['post_count'])
 
 
 class Post(models.Model):
@@ -61,6 +48,7 @@ class Post(models.Model):
         NORMAL = 'normal', _('正常状态')
         DELETED = 'deleted', _('已删除')
         REPORTED = 'reported', _('已举报')
+        HIDDEN = 'hidden', _('隐藏')
     
     # 基本信息
     title = models.CharField(_('帖子标题'), max_length=255, db_index=True)

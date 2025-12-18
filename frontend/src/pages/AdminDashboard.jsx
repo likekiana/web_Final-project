@@ -68,13 +68,13 @@ const AdminDashboard = () => {
         <Content style={{ margin: '16px 24px 24px' }}>
           <div style={{ padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>
             <Routes>
-            <Route path="" element={<AdminHome />} />
-            <Route path="/users" element={<UserManagement />} />
-            <Route path="/content" element={<ContentManagement />} />
-            <Route path="/categories" element={<CategoryManagement />} />
-            <Route path="/ads" element={<AdManagement />} />
-            <Route path="/reports" element={<ReportManagement />} />
-          </Routes>
+              <Route index element={<AdminHome />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="content" element={<ContentManagement />} />
+              <Route path="categories" element={<CategoryManagement />} />
+              <Route path="ads" element={<AdManagement />} />
+              <Route path="reports" element={<ReportManagement />} />
+            </Routes>
           </div>
         </Content>
       </Layout>

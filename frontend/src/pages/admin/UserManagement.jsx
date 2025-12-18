@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Typography, Button, Space, Tag, Input, Select, Modal, message, Form, Divider } from 'antd'
+import { Card, Table, Typography, Button, Space, Tag, Input, Select, Modal, message, Form, Divider, Tooltip } from 'antd'
 import { SearchOutlined, EditOutlined, DeleteOutlined, UserOutlined, LockOutlined, UnlockOutlined, CloseCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { adminAPI } from '../../services/api'
 
@@ -154,43 +154,51 @@ const UserManagement = () => {
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: 240,
       align: 'center',
       render: (_, record) => (
-        <Space size="middle">
-              <Button 
-                type="primary" 
-                icon={<EditOutlined />} 
-                size="small" 
-                onClick={() => handleRoleUpdate(record)}
-              >
-                角色
-              </Button>
-              <Button 
-                type={record.status === 'active' ? 'danger' : 'success'} 
-                icon={record.status === 'active' ? <CloseCircleOutlined /> : <CheckCircleOutlined />} 
-                size="small" 
-                onClick={() => handleToggleBan(record)}
-              >
-                {record.status === 'active' ? '封禁' : '解封'}
-              </Button>
-              <Button 
-                type="default" 
-                icon={<LockOutlined />} 
-                size="small" 
-                onClick={() => handleResetPassword(record)}
-              >
-                密码
-              </Button>
-              <Button 
-                type="danger" 
-                icon={<DeleteOutlined />} 
-                size="small" 
-                onClick={() => handleDeleteUser(record)}
-              >
-                删除
-              </Button>
-            </Space>
+        <Space size="small" wrap>
+          <Tooltip title="角色">
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />} 
+              size="small" 
+              onClick={() => handleRoleUpdate(record)}
+              shape="circle"
+            >
+            </Button>
+          </Tooltip>
+          <Tooltip title={record.status === 'active' ? '封禁' : '解封'}>
+            <Button 
+              type={record.status === 'active' ? 'danger' : 'success'} 
+              icon={record.status === 'active' ? <CloseCircleOutlined /> : <CheckCircleOutlined />} 
+              size="small" 
+              onClick={() => handleToggleBan(record)}
+              shape="circle"
+            >
+            </Button>
+          </Tooltip>
+          <Tooltip title="密码">
+            <Button 
+              type="default" 
+              icon={<LockOutlined />} 
+              size="small" 
+              onClick={() => handleResetPassword(record)}
+              shape="circle"
+            >
+            </Button>
+          </Tooltip>
+          <Tooltip title="删除">
+            <Button 
+              type="danger" 
+              icon={<DeleteOutlined />} 
+              size="small" 
+              onClick={() => handleDeleteUser(record)}
+              shape="circle"
+            >
+            </Button>
+          </Tooltip>
+        </Space>
       )
     }
   ]

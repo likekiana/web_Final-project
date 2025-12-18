@@ -1,23 +1,38 @@
 import React, { useState, useEffect } from 'react'
-import { Card, List, Avatar, Button, Space, Typography, Input, Form, Tag, Empty, Spin, Drawer } from 'antd'
+import { Card, List, Avatar, Button, Space, Typography, Input, Form, Tag, Empty, Spin, Drawer, Modal, message, Layout } from 'antd'
 import { 
   UserOutlined, MessageOutlined, SendOutlined, 
-  CheckCircleOutlined, CloseCircleOutlined, BellOutlined 
+  CheckCircleOutlined, CloseCircleOutlined, BellOutlined, DeleteOutlined, ArrowLeftOutlined 
 } from '@ant-design/icons'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { messageAPI } from '../services/api'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
+const { Sider, Content } = Layout
 
 const Messages = () => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [conversations, setConversations] = useState([])
-  const [selectedConversation, setSelectedConversation] = useState(null)
-  const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
-  const [messagesLoading, setMessagesLoading] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [drawerVisible, setDrawerVisible] = useState(false)
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const [messageToDelete, setMessageToDelete] = useState(null)
+  const [sendDrawerVisible, setSendDrawerVisible] = useState(false)
   const [form] = Form.useForm()
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [allMessages, setAllMessages] = useState([])
+  
+  // 检查是否有userId查询参数，如果有，导航到对话详情页
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const userId = searchParams.get('userId')
+    if (userId) {
+      // 移除查询参数，导航到动态路由
+      navigate(`/messages/${userId}`)
+    }
+  }, [location.search, navigate])
 
   // 获取对话列表
   const fetchConversations = async () => {
@@ -29,6 +44,11 @@ const Messages = () => {
       }
     } catch (error) {
       console.error('Failed to fetch conversations:', error)
+      console.error('Request URL:', error.config?.url)
+      console.error('Request method:', error.config?.method)
+      console.error('Request headers:', error.config?.headers)
+      console.error('Response status:', error.response?.status)
+      console.error('Response data:', error.response?.data)
     } finally {
       setLoading(false)
     }
@@ -46,16 +66,16 @@ const Messages = () => {
     }
   }
 
-  // 获取与特定用户的对话
-  const fetchConversationMessages = async (userId) => {
+  // 获取所有消息
+  const fetchAllMessages = async () => {
     setMessagesLoading(true)
     try {
-      const response = await messageAPI.getConversationWithUser(userId)
+      const response = await messageAPI.getMessages()
       if (response.success) {
-        setMessages(response.data || [])
+        setAllMessages(response.data || [])
       }
     } catch (error) {
-      console.error('Failed to fetch conversation messages:', error)
+      console.error('Failed to fetch all messages:', error)
     } finally {
       setMessagesLoading(false)
     }
@@ -63,19 +83,20 @@ const Messages = () => {
 
   // 发送私信
   const handleSendMessage = async (values) => {
-    if (!selectedConversation) return
-
     try {
-      const recipientId = selectedConversation.sender?.id || selectedConversation.recipient.id
-      const response = await messageAPI.sendMessage({
-        ...values,
-        recipient_id: recipientId
-      })
+      // 准备发送数据
+      const messageData = values;
+      
+      const response = await messageAPI.sendMessage(messageData)
       if (response.success) {
-        // 重新获取对话消息
-        fetchConversationMessages(recipientId)
-        // 重新获取对话列表
+        // 重新获取对话列表，确保新消息显示在对话列表中
         fetchConversations()
+        // 重新获取所有消息，确保新消息显示在所有消息列表中
+        fetchAllMessages()
+        
+        // 关闭发送私信抽屉
+        setSendDrawerVisible(false)
+        
         // 重置表单
         form.resetFields()
       }
@@ -97,28 +118,65 @@ const Messages = () => {
     }
   }
 
-  // 选择对话
+  // 选择对话 - 导航到对话详情页
   const handleSelectConversation = (conversation) => {
-    setSelectedConversation(conversation)
-    const userId = conversation.sender?.id || conversation.recipient.id
-    fetchConversationMessages(userId)
+    // 使用后端提供的conversation_partner字段获取对方用户ID
+    const userId = conversation.conversation_partner?.id;
+    // 导航到对话详情页
+    navigate(`/messages/${userId}`)
   }
 
   // 打开发送私信抽屉
   const handleOpenDrawer = () => {
-    setDrawerVisible(true)
+    setSendDrawerVisible(true)
   }
 
   // 关闭发送私信抽屉
   const handleCloseDrawer = () => {
-    setDrawerVisible(false)
+    setSendDrawerVisible(false)
     form.resetFields()
+  }
+
+  // 打开删除确认模态框
+  const handleDeleteMessage = (message) => {
+    setMessageToDelete(message)
+    setDeleteModalVisible(true)
+  }
+
+  // 关闭删除确认模态框
+  const handleCloseDeleteModal = () => {
+    setDeleteModalVisible(false)
+    setMessageToDelete(null)
+  }
+
+  // 执行删除私信操作
+  const handleConfirmDeleteMessage = async () => {
+    if (!messageToDelete) return
+
+    try {
+      const response = await messageAPI.deleteMessage(messageToDelete.id)
+      if (response.success) {
+        message.success('私信删除成功')
+        
+        // 关闭删除确认模态框
+        handleCloseDeleteModal()
+        
+        // 重新获取对话列表，确保删除的消息从列表中移除
+        fetchConversations()
+        // 重新获取所有消息，确保删除的消息从所有消息列表中移除
+        fetchAllMessages()
+      }
+    } catch (error) {
+      console.error('Failed to delete message:', error)
+      message.error('删除私信失败')
+    }
   }
 
   // 初始化数据
   useEffect(() => {
     fetchConversations()
     fetchUnreadCount()
+    fetchAllMessages()
   }, [])
 
   return (
@@ -160,6 +218,18 @@ const Messages = () => {
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         {conversation.created_at}
                       </Text>
+                      <Button
+                        type="link"
+                        icon={<DeleteOutlined />}
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation(); // 阻止事件冒泡，避免触发对话选择
+                          handleDeleteMessage(conversation);
+                        }}
+                        style={{ color: '#ff4d4f' }}
+                      >
+                        删除
+                      </Button>
                     </Space>
                   ]}
                   style={{
@@ -178,13 +248,13 @@ const Messages = () => {
                     avatar={
                       <Avatar 
                         icon={<UserOutlined />} 
-                        src={conversation.sender?.avatar || conversation.recipient.avatar}
+                        src={conversation.conversation_partner?.avatar}
                       />
                     }
                     title={
                       <Space>
                         <Text strong>
-                          {conversation.sender?.username || conversation.recipient.username}
+                          {conversation.conversation_partner?.username}
                         </Text>
                         {conversation.is_unread && (
                           <Tag color="blue">未读</Tag>
@@ -218,7 +288,7 @@ const Messages = () => {
         title="发送私信"
         placement="right"
         onClose={handleCloseDrawer}
-        open={drawerVisible}
+        open={sendDrawerVisible}
         width={400}
       >
         <Form
@@ -266,82 +336,18 @@ const Messages = () => {
         </Form>
       </Drawer>
 
-      {/* 对话详情 */}
-      {selectedConversation && (
-        <Drawer
-          title={`与 ${selectedConversation.sender?.username || selectedConversation.recipient.username} 的对话`}
-          placement="right"
-          onClose={() => setSelectedConversation(null)}
-          open={!!selectedConversation}
-          width={600}
-        >
-          <Spin spinning={messagesLoading}>
-            {messages.length > 0 ? (
-              <div style={{ maxHeight: 400, overflowY: 'auto', marginBottom: 20 }}>
-                {messages.map((msg) => (
-                  <div 
-                    key={msg.id}
-                    style={{
-                      marginBottom: 16,
-                      display: 'flex',
-                      justifyContent: msg.sender?.id === selectedConversation.sender?.id ? 'flex-end' : 'flex-start'
-                    }}
-                  >
-                    <div
-                      style={{
-                        maxWidth: '70%',
-                        padding: 12,
-                        borderRadius: 8,
-                        backgroundColor: msg.sender?.id === selectedConversation.sender?.id ? '#1890ff' : '#f0f0f0',
-                        color: msg.sender?.id === selectedConversation.sender?.id ? '#fff' : '#000'
-                      }}
-                    >
-                      <div style={{ marginBottom: 4, fontWeight: 'bold' }}>
-                        {msg.sender?.username || '系统'}
-                      </div>
-                      <div>{msg.content}</div>
-                      <div style={{ marginTop: 4, fontSize: 12, opacity: 0.7 }}>
-                        {msg.created_at}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <span>暂无消息</span>
-                }
-                style={{ margin: '50px 0' }}
-              />
-            )}
-          </Spin>
-          
-          <Form
-            form={form}
-            layout="inline"
-            onFinish={handleSendMessage}
-            style={{ marginTop: 20 }}
-          >
-            <Form.Item
-              name="content"
-              rules={[{ required: true, message: '请输入消息内容' }]}
-            >
-              <TextArea
-                rows={3}
-                placeholder="请输入消息内容"
-                style={{ width: '80%' }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SendOutlined />}>
-                发送
-              </Button>
-            </Form.Item>
-          </Form>
-        </Drawer>
-      )}
+      {/* 删除确认模态框 */}
+      <Modal
+        title="删除私信"
+        open={deleteModalVisible}
+        onOk={handleConfirmDeleteMessage}
+        onCancel={handleCloseDeleteModal}
+        okText="确认删除"
+        cancelText="取消"
+        okType="danger"
+      >
+        <p>确定要删除这条私信吗？删除后将无法恢复。</p>
+      </Modal>
     </div>
   )
 }

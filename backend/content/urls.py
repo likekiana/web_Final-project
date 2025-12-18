@@ -7,7 +7,8 @@ from .views import (
     CategoryListView, CategoryDetailView,
     PostListView, PostDetailView,
     CommentListView, CommentDetailView,
-    PostCommentsView, PostCommentCreateView
+    PostCommentsView, PostCommentCreateView,
+    FileUploadView
 )
 from likes.views import LikeToggleView
 
@@ -21,6 +22,8 @@ urlpatterns = [
     path('posts', PostListView.as_view(), name='post-list'),
     path('posts/<int:id>', PostDetailView.as_view(), name='post-detail'),
     path('posts/<int:id>/like', LikeToggleView.as_view(), name='post-like'),
+    # 文件上传路由
+    path('posts/upload', FileUploadView.as_view(), name='file-upload'),
     
     # 评论相关路由
     path('comments', CommentListView.as_view(), name='comment-list'),

@@ -57,6 +57,13 @@ class User(AbstractUser):
     post_count = models.IntegerField(_('发帖数'), default=0)
     comment_count = models.IntegerField(_('评论数'), default=0)
     
+    # 隐私设置
+    show_profile = models.BooleanField(_('谁可以查看我的个人资料'), default=True)
+    allow_messages = models.BooleanField(_('谁可以给我发送私信'), default=True)
+    allow_follow = models.BooleanField(_('允许他人关注我'), default=True)
+    show_posts = models.BooleanField(_('谁可以查看我的帖子'), default=True)
+    save_history = models.BooleanField(_('保存浏览历史'), default=True)
+    
     # Django内置字段
     is_active = models.BooleanField(
         _('是否活跃'),

@@ -22,7 +22,11 @@ class NotificationSerializer(serializers.ModelSerializer):
     read_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     
     # 额外字段
-    is_unread = serializers.BooleanField(source='status', read_only=True)
+    is_unread = serializers.SerializerMethodField(read_only=True)
+    
+    def get_is_unread(self, obj):
+        """获取通知是否未读"""
+        return obj.status == obj.Status.UNREAD
     
     class Meta:
         model = Notification
@@ -48,7 +52,11 @@ class NotificationListSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
     
     # 额外字段
-    is_unread = serializers.BooleanField(source='status', read_only=True)
+    is_unread = serializers.SerializerMethodField(read_only=True)
+    
+    def get_is_unread(self, obj):
+        """获取通知是否未读"""
+        return obj.status == obj.Status.UNREAD
     
     class Meta:
         model = Notification

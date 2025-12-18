@@ -2,10 +2,14 @@
 内容管理应用视图
 """
 
-from rest_framework import status, generics
+from rest_framework import status, generics, parsers
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.db.models import Q
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
+import uuid
 
 from .models import Category, Post, Comment
 from accounts.models import User
@@ -154,11 +158,16 @@ class PostListView(generics.ListCreateAPIView):
             'commentsCount': 'comments_count'
         }
         
+        # 构建排序字段列表，始终将置顶和精华放在前面
+        ordering = ['-is_sticky', '-is_essential']
+        
         if sort_by in sort_field_map:
             sort_field = sort_field_map[sort_by]
             if order == 'desc':
                 sort_field = f'-{sort_field}'
-            queryset = queryset.order_by(sort_field)
+            ordering.append(sort_field)
+        
+        queryset = queryset.order_by(*ordering)
         
         # 检查请求路径，判断是否为管理员访问
         if 'admin' not in self.request.path:
@@ -275,6 +284,18 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     def retrieve(self, request, *args, **kwargs):
         """获取帖子详情"""
         instance = self.get_object()
+        
+        # 检查帖子状态，普通用户只能查看正常状态的帖子
+        if instance.status != 'normal' and 'admin' not in request.path:
+            return Response({
+                "success": False,
+                "message": "帖子不存在或已被隐藏",
+                "error": {
+                    "code": 404,
+                    "details": "帖子不存在或已被隐藏"
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+        
         # 增加浏览量
         instance.increment_views_count()
         
@@ -687,9 +708,11 @@ class PostCommentsView(generics.ListAPIView):
     def get_queryset(self):
         """获取指定帖子的评论列表"""
         post_id = self.kwargs.get('post_id')
+        # 只返回正常状态帖子的评论
         return Comment.objects.filter(
             post_id=post_id, 
-            status='normal'
+            status='normal',
+            post__status='normal'
         ).order_by('created_at')
     
     def list(self, request, *args, **kwargs):
@@ -744,6 +767,29 @@ class PostCommentCreateView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         """创建评论"""
         post_id = self.kwargs.get('post_id')
+        
+        # 检查帖子状态，只有正常状态的帖子才能评论
+        try:
+            post = Post.objects.get(id=post_id)
+            if post.status != 'normal':
+                return Response({
+                    "success": False,
+                    "message": "帖子不存在或已被隐藏，无法评论",
+                    "error": {
+                        "code": 404,
+                        "details": "帖子不存在或已被隐藏，无法评论"
+                    }
+                }, status=status.HTTP_404_NOT_FOUND)
+        except Post.DoesNotExist:
+            return Response({
+                "success": False,
+                "message": "帖子不存在，无法评论",
+                "error": {
+                    "code": 404,
+                    "details": "帖子不存在，无法评论"
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+        
         request.data['post'] = post_id
         serializer = CommentSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
@@ -817,3 +863,93 @@ class DashboardStatsView(generics.GenericAPIView):
                 "recent_activities": formatted_activities
             }
         })
+
+
+class FileUploadView(generics.GenericAPIView):
+    """文件上传视图，用于处理图片和视频的上传"""
+    
+    permission_classes = [IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+    
+    def post(self, request):
+        """处理文件上传请求"""
+        try:
+            # 获取上传的文件
+            file = request.FILES.get('file')
+            if not file:
+                return Response({
+                    "success": False,
+                    "message": "请选择要上传的文件",
+                    "error": {
+                        "code": 400,
+                        "details": "文件不能为空"
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # 验证文件类型
+            allowed_types = {
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'video/mp4', 'video/mov', 'video/avi', 'video/quicktime'
+            }
+            if file.content_type not in allowed_types:
+                return Response({
+                    "success": False,
+                    "message": "文件类型不允许",
+                    "error": {
+                        "code": 400,
+                        "details": "只允许上传图片（JPG、PNG、GIF、WebP）和视频（MP4、MOV、AVI、QuickTime）文件"
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # 验证文件大小
+            max_size = 10 * 1024 * 1024  # 10MB
+            if file.size > max_size:
+                return Response({
+                    "success": False,
+                    "message": "文件大小超过限制",
+                    "error": {
+                        "code": 400,
+                        "details": f"文件大小不能超过 {max_size / 1024 / 1024}MB"
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # 生成唯一文件名
+            ext = os.path.splitext(file.name)[1]
+            unique_filename = f"{uuid.uuid4()}{ext}"
+            
+            # 根据文件类型确定保存路径
+            if file.content_type.startswith('image/'):
+                file_path = os.path.join('post_images', unique_filename)
+            else:  # video/
+                file_path = os.path.join('post_videos', unique_filename)
+            
+            # 保存文件
+            file_url = default_storage.save(file_path, ContentFile(file.read()))
+            
+            # 构建完整的URL，包含域名
+            from django.conf import settings
+            # 获取请求的协议和域名
+            protocol = 'https' if request.is_secure() else 'http'
+            domain = request.get_host()
+            full_url = f"{protocol}://{domain}{settings.MEDIA_URL}{file_url}"
+            
+            return Response({
+                "success": True,
+                "message": "文件上传成功",
+                "data": {
+                    "url": full_url,
+                    "name": file.name,
+                    "size": file.size,
+                    "type": file.content_type
+                }
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(f"文件上传失败: {str(e)}")
+            return Response({
+                "success": False,
+                "message": "文件上传失败",
+                "error": {
+                    "code": 500,
+                    "details": str(e)
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

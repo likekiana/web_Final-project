@@ -137,6 +137,46 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             "message": "更新成功",
             "data": serializer.data
         })
+    
+    def post(self, request, *args, **kwargs):
+        """修改密码"""
+        instance = self.get_object()
+        
+        # 获取请求数据
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        
+        # 验证必填字段
+        if not old_password or not new_password:
+            return Response({
+                "success": False,
+                "message": "请提供旧密码和新密码",
+                "error": {
+                    "code": 400,
+                    "details": "请提供旧密码和新密码"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 验证旧密码是否正确
+        if not instance.check_password(old_password):
+            return Response({
+                "success": False,
+                "message": "旧密码不正确",
+                "error": {
+                    "code": 400,
+                    "details": "旧密码不正确"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 更新密码
+        instance.set_password(new_password)
+        instance.save()
+        
+        return Response({
+            "success": True,
+            "message": "密码修改成功",
+            "data": {}
+        })
 
 
 class UserDetailView(generics.RetrieveUpdateAPIView):

@@ -5,6 +5,7 @@
 from rest_framework import status, generics, viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
 
 from accounts.models import User
@@ -18,6 +19,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageListSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'delete']
+    parser_classes = [MultiPartParser, FormParser]
     
     def get_queryset(self):
         """获取当前用户的私信列表"""
@@ -69,11 +71,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """创建私信"""
-        serializer = self.get_serializer(data=request.data)
+        # 确保序列化器获取到请求上下文
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         
         # 创建私信
-        message = serializer.save(sender=request.user)
+        message = serializer.save()
         
         serializer = MessageSerializer(message)
         return Response({
@@ -167,11 +170,16 @@ class MessageConversationListView(generics.ListAPIView):
         
         # 获取唯一的对话用户ID
         conversation_user_ids = set()
+        current_user_id = self.request.user.id
         for message in messages:
             if message.sender == self.request.user:
-                conversation_user_ids.add(message.recipient.id)
-            else:
-                conversation_user_ids.add(message.sender.id)
+                # 发送者是当前用户，对话用户是接收者
+                if message.recipient.id != current_user_id:  # 过滤掉自己
+                    conversation_user_ids.add(message.recipient.id)
+            elif message.sender:
+                # 发送者不是当前用户且不为空，对话用户是发送者
+                if message.sender.id != current_user_id:  # 过滤掉自己
+                    conversation_user_ids.add(message.sender.id)
         
         # 获取每个对话的最新消息
         latest_messages = []

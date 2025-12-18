@@ -48,56 +48,30 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
     fetchCategories()
   }, [])
 
-  // 搜索和排序帖子
-  const searchAndSortPosts = (postsToFilter) => {
-    // 确保postsToFilter是数组
-    const safePosts = Array.isArray(postsToFilter) ? postsToFilter : []
-    let filtered = [...safePosts]
-
-    // 关键词搜索
-    if (keyword.trim()) {
-      const searchKeyword = keyword.toLowerCase().trim()
-      filtered = filtered.filter(post => 
-        post.title?.toLowerCase().includes(searchKeyword) || 
-        post.content?.toLowerCase().includes(searchKeyword)
-      )
-    }
-
-    // 排序
-    filtered.sort((a, b) => {
-      let aValue = a[sortBy]
-      let bValue = b[sortBy]
-
-      // 确保值存在
-      if (aValue === undefined || aValue === null) return sortOrder === 'asc' ? 1 : -1
-      if (bValue === undefined || bValue === null) return sortOrder === 'asc' ? -1 : 1
-
-      // 字符串类型特殊处理
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' 
-          ? aValue.localeCompare(bValue) 
-          : bValue.localeCompare(aValue)
-      }
-
-      // 数字类型比较
-      return sortOrder === 'asc' 
-        ? aValue - bValue 
-        : bValue - aValue
-    })
-
-    return filtered
-  }
-
-  const displayPosts = searchAndSortPosts(posts)
+  // 直接使用后端返回的帖子列表，不进行前端筛选
+  const displayPosts = posts
   const displayTotal = posts.length
 
   const handleSort = (field) => {
+    // 计算新的排序顺序
+    let newSortBy = field;
+    let newSortOrder = 'desc';
     if (sortBy === field) {
-      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')
-    } else {
-      setSortBy(field)
-      setSortOrder('desc')
+      newSortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
     }
+    
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    
+    // 更新URL参数
+    const newSearchParams = new URLSearchParams(window.location.search);
+    newSearchParams.set('sortBy', newSortBy);
+    newSearchParams.set('order', newSortOrder);
+    newSearchParams.set('page', '1'); // 排序时重置到第一页
+    window.history.pushState({}, '', `?${newSearchParams.toString()}`);
+    
+    // 调用后端API获取排序后的结果
+    onPageChange(1, pageSize);
   }
 
   // 获取AI搜索建议
@@ -128,6 +102,17 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
 
   const handleSearch = (value) => {
     setKeyword(value)
+    // 更新URL参数
+    const newSearchParams = new URLSearchParams(window.location.search);
+    if (value) {
+      newSearchParams.set('keyword', value);
+    } else {
+      newSearchParams.delete('keyword');
+    }
+    newSearchParams.set('page', '1'); // 搜索时重置到第一页
+    window.history.pushState({}, '', `?${newSearchParams.toString()}`);
+    // 调用后端API获取搜索结果
+    onPageChange(1, pageSize)
   }
 
   const handleSearchChange = (value) => {
@@ -210,44 +195,75 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
   return (
     <div>
       {/* 筛选和排序区域 */}
-      <Card style={{ marginBottom: 16 }}>
+      <div style={{ 
+        backgroundColor: 'white', 
+        borderRadius: '12px', 
+        padding: '24px', 
+        marginBottom: '24px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        border: '1px solid #f0f0f0'
+      }}>
         <Form form={form} layout="vertical">
-          <Row gutter={[16, 16]} align="middle">
+          <Row gutter={[24, 16]} align="middle">
             {/* 关键词搜索 */}
             <Col xs={24} sm={12} md={8}>
-              <Text strong>智能搜索：</Text>
-              <div style={{ display: 'flex', alignItems: 'center', marginLeft: 8 }}>
-                <AutoComplete
-                  options={searchSuggestions.map(suggestion => ({
-                    label: suggestion,
-                    value: suggestion
-                  }))}
-                  style={{ width: 300 }}
-                  onSearch={handleSearch}
-                  onSelect={handleSearch}
-                  onChange={handleSearchChange}
-                  loading={searchLoading}
-                >
-                  <Input.Search
-                    placeholder="请输入关键词（支持自然语言，如'如何办理校园卡'）"
-                    allowClear
-                    enterButton={<SearchOutlined />}
-                    size="middle"
-                    value={keyword}
-                  />
-                </AutoComplete>
-                <Tag color="blue" icon={<BulbOutlined />} style={{ marginLeft: 8 }}>
-                  AI增强
-                </Tag>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <Text strong style={{ marginBottom: 8, fontSize: '14px', color: '#262626' }}>智能搜索：</Text>
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '12px' }}>
+                  <AutoComplete
+                    options={searchSuggestions.map(suggestion => ({
+                      label: suggestion,
+                      value: suggestion
+                    }))}
+                    style={{ width: '100%', maxWidth: 300 }}
+                    onSearch={handleSearch}
+                    onSelect={handleSearch}
+                    onChange={handleSearchChange}
+                    loading={searchLoading}
+                  >
+                    <Input.Search
+                      placeholder="请输入关键词（支持自然语言，如'如何办理校园卡'）"
+                      allowClear
+                      enterButton={<SearchOutlined />}
+                      size="middle"
+                      value={keyword}
+                      style={{ 
+                        width: '100%',
+                        borderRadius: '8px',
+                        border: '1px solid #d9d9d9',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                      }}
+                    />
+                  </AutoComplete>
+                  <Tag 
+                    color="#1890ff" 
+                    icon={<BulbOutlined />} 
+                    style={{ 
+                      marginLeft: 8,
+                      borderRadius: '6px',
+                      padding: '4px 12px',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    AI增强
+                  </Tag>
+                </div>
               </div>
             </Col>
             
             {/* 板块筛选 */}
-              <Col xs={24} sm={12} md={6}>
-                <Text strong>板块筛选：</Text>
+            <Col xs={24} sm={12} md={6}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <Text strong style={{ marginBottom: 8, fontSize: '14px', color: '#262626' }}>板块筛选：</Text>
                 <Select
                   placeholder="选择板块"
-                  style={{ width: 200, marginLeft: 8 }}
+                  style={{ 
+                    width: '100%', 
+                    maxWidth: 200,
+                    borderRadius: '8px',
+                    border: '1px solid #d9d9d9'
+                  }}
                   onChange={(value) => {
                     setSelectedCategory(value);
                     onCategoryChange(value);
@@ -261,120 +277,236 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
                     </Select.Option>
                   ))}
                 </Select>
-              </Col>
+              </div>
+            </Col>
             
             {/* 排序方式 */}
             <Col xs={24} sm={12} md={6}>
-              <Text strong>排序方式：</Text>
-              <Space size="middle" style={{ marginLeft: 8 }}>
-                <Button
-                  type={sortBy === 'created_at' ? 'primary' : 'default'}
-                  onClick={() => handleSort('created_at')}
-                  icon={sortOrder === 'desc' && sortBy === 'created_at' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
-                >
-                  最新
-                </Button>
-                <Button
-                  type={sortBy === 'likes_count' ? 'primary' : 'default'}
-                  onClick={() => handleSort('likes_count')}
-                  icon={sortOrder === 'desc' && sortBy === 'likes_count' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
-                >
-                  最热
-                </Button>
-                <Button
-                  type={sortBy === 'comments_count' ? 'primary' : 'default'}
-                  onClick={() => handleSort('comments_count')}
-                  icon={sortOrder === 'desc' && sortBy === 'comments_count' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
-                >
-                  评论最多
-                </Button>
-              </Space>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <Text strong style={{ marginBottom: 8, fontSize: '14px', color: '#262626' }}>排序方式：</Text>
+                <Space size="middle" wrap>
+                  <Button
+                    type={sortBy === 'created_at' ? 'primary' : 'default'}
+                    onClick={() => handleSort('created_at')}
+                    icon={sortOrder === 'desc' && sortBy === 'created_at' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+                    size="middle"
+                    style={{
+                      borderRadius: '6px',
+                      padding: '0 16px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    最新
+                  </Button>
+                  <Button
+                    type={sortBy === 'likes_count' ? 'primary' : 'default'}
+                    onClick={() => handleSort('likes_count')}
+                    icon={sortOrder === 'desc' && sortBy === 'likes_count' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+                    size="middle"
+                    style={{
+                      borderRadius: '6px',
+                      padding: '0 16px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    最热
+                  </Button>
+                  <Button
+                    type={sortBy === 'comments_count' ? 'primary' : 'default'}
+                    onClick={() => handleSort('comments_count')}
+                    icon={sortOrder === 'desc' && sortBy === 'comments_count' ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+                    size="middle"
+                    style={{
+                      borderRadius: '6px',
+                      padding: '0 16px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    评论最多
+                  </Button>
+                </Space>
+              </div>
             </Col>
             
             {/* 重置按钮 */}
-            <Col xs={24} style={{ textAlign: 'right' }}>
-              <Button onClick={handleReset} style={{ marginRight: 8 }}>
+            <Col xs={24} md={4} style={{ textAlign: 'right' }}>
+              <Button 
+                onClick={handleReset} 
+                size="middle"
+                style={{
+                  borderRadius: '6px',
+                  padding: '0 20px',
+                  border: '1px solid #d9d9d9',
+                  backgroundColor: 'white'
+                }}
+              >
                 重置
               </Button>
             </Col>
           </Row>
         </Form>
-      </Card>
+      </div>
 
       {/* 帖子列表 */}
-      <List
-        grid={{ gutter: 16, xs: 1, sm: 1, md: 1, lg: 1 }}
-        dataSource={displayPosts}
-        renderItem={(post) => (
-          <List.Item>
-            <Card
-              hoverable
-              title={
-                <Link to={`/posts/${post.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  <Space>
-                    <Title level={4} style={{ margin: 0 }}>{post.title}</Title>
-                    {post.is_sticky && <Tag color="red">置顶</Tag>}
-                    {post.is_essential && <Tag color="purple">精华</Tag>}
-                    {post.type === 'trade' && <Tag color="orange">交易</Tag>}
-                    {post.type === 'advertisement' && <Tag color="red">广告</Tag>}
-                    {post.type === 'anonymous' && <Tag color="gray">匿名</Tag>}
-                  </Space>
-                </Link>
-              }
-              extra={
-                <Tag color="blue">{post.category?.name}</Tag>
-              }
-              style={{ marginBottom: 16 }}
-            >
-              <Paragraph ellipsis={{ rows: 2 }}>
-                {post.content}
-              </Paragraph>
-              
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
-                <Space>
-                  <Avatar icon={<UserOutlined />} src={post.type === 'anonymous' ? null : post.user?.avatar} size={32} />
-                  <div>
-                    <Text strong>{post.type === 'anonymous' ? '匿名用户' : post.user?.username}</Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {new Date(post.created_at).toLocaleString()}
-                    </Text>
-                  </div>
-                </Space>
-                
-                <Space size="middle" style={{ marginLeft: 'auto' }}>
-                  <Space>
-                    <EyeOutlined />
-                    <Text type="secondary">{post.views_count}</Text>
-                  </Space>
-                  <Space>
-                    <CommentOutlined />
-                    <Text type="secondary">{post.comments_count}</Text>
-                  </Space>
-                  <Space>
-                    <LikeOutlined />
-                    <Text type="secondary">{post.likes_count}</Text>
-                  </Space>
-                  <Button 
-                    type={favoritedPosts[post.id] ? "primary" : "default"} 
-                    icon={<StarOutlined />}
-                    size="small"
-                    loading={favoritingPosts.has(post.id)}
-                    onClick={() => handleToggleFavorite(post.id)}
-                    style={{ padding: '0 8px' }}
+      <div style={{ marginBottom: '24px' }}>
+        {displayPosts.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '64px 24px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+            border: '1px solid #f0f0f0'
+          }}>
+            <div style={{ 
+              fontSize: '48px', 
+              marginBottom: '16px',
+              color: '#f0f0f0'
+            }}>📝</div>
+            <Title level={4} style={{ margin: '0 0 8px 0', color: '#8c8c8c' }}>暂无帖子</Title>
+            <Paragraph style={{ margin: 0, color: '#bfbfbf' }}>
+              还没有相关帖子，快来发布第一个帖子吧！
+            </Paragraph>
+          </div>
+        ) : (
+          <List
+            dataSource={displayPosts}
+            renderItem={(post) => (
+              <List.Item style={{ marginBottom: '16px', padding: 0 }}>
+                <Card
+                  hoverable
+                  title={
+                    <Link to={`/posts/${post.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      <Space size="middle">
+                        <EyeOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#262626' }}>{post.title}</Title>
+                        {post.is_sticky && <Tag color="red" style={{ borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>置顶</Tag>}
+                        {post.is_essential && <Tag color="purple" style={{ borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>精华</Tag>}
+                        {post.type === 'trade' && <Tag color="orange" style={{ borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>交易</Tag>}
+                        {post.type === 'advertisement' && <Tag color="red" style={{ borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>广告</Tag>}
+                        {post.type === 'anonymous' && <Tag color="gray" style={{ borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>匿名</Tag>}
+                      </Space>
+                    </Link>
+                  }
+                  extra={
+                    <Tag 
+                      color="#1890ff" 
+                      style={{ 
+                        borderRadius: '6px', 
+                        padding: '4px 12px',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {post.category?.name}
+                    </Tag>
+                  }
+                  style={{ 
+                    borderRadius: '12px', 
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                    border: '1px solid #f0f0f0',
+                    transition: 'all 0.3s ease'
+                  }}
+                  styles={{ body: { padding: '16px 24px 20px' } }}
+                >
+                  <Paragraph 
+                    ellipsis={{ rows: 2 }} 
+                    style={{ 
+                      margin: 0, 
+                      fontSize: '15px',
+                      lineHeight: '1.7',
+                      color: '#595959'
+                    }}
                   >
-                    {favoritedPosts[post.id] ? '已收藏' : '收藏'}
-                  </Button>
-                </Space>
-              </div>
-            </Card>
-          </List.Item>
+                    {post.content}
+                  </Paragraph>
+                  
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    marginTop: '20px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #f0f0f0'
+                  }}>
+                    <Space>
+                      <Avatar 
+                        icon={<UserOutlined />} 
+                        src={post.type === 'anonymous' ? null : post.user?.avatar} 
+                        size={36} 
+                        style={{
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <div>
+                        <Text strong style={{ fontSize: '15px', color: '#262626' }}>
+                          {post.type === 'anonymous' ? '匿名用户' : post.user?.username}
+                        </Text>
+                        <br />
+                        <Text 
+                          type="secondary" 
+                          style={{ fontSize: '13px', color: '#bfbfbf' }}
+                        >
+                          {new Date(post.created_at).toLocaleString()}
+                        </Text>
+                      </div>
+                    </Space>
+                    
+                    <Space size="middle" style={{ marginLeft: 'auto' }}>
+                      <Space size="small">
+                        <EyeOutlined style={{ fontSize: '16px', color: '#8c8c8c' }} />
+                        <Text type="secondary" style={{ fontSize: '14px', color: '#8c8c8c' }}>
+                          {post.views_count}
+                        </Text>
+                      </Space>
+                      <Space size="small">
+                        <CommentOutlined style={{ fontSize: '16px', color: '#8c8c8c' }} />
+                        <Text type="secondary" style={{ fontSize: '14px', color: '#8c8c8c' }}>
+                          {post.comments_count}
+                        </Text>
+                      </Space>
+                      <Space size="small">
+                        <LikeOutlined style={{ fontSize: '16px', color: '#8c8c8c' }} />
+                        <Text type="secondary" style={{ fontSize: '14px', color: '#8c8c8c' }}>
+                          {post.likes_count}
+                        </Text>
+                      </Space>
+                      <Button 
+                        type={favoritedPosts[post.id] ? "primary" : "default"} 
+                        icon={<StarOutlined />}
+                        size="middle"
+                        loading={favoritingPosts.has(post.id)}
+                        onClick={() => handleToggleFavorite(post.id)}
+                        style={{ 
+                          borderRadius: '6px',
+                          padding: '0 16px',
+                          height: '32px',
+                          fontSize: '14px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {favoritedPosts[post.id] ? '已收藏' : '收藏'}
+                      </Button>
+                    </Space>
+                  </div>
+                </Card>
+              </List.Item>
+            )}
+          />
         )}
-      />
+      </div>
 
       {/* 分页组件 */}
       {displayTotal > pageSize && (
-        <div style={{ textAlign: 'center', marginTop: 24 }}>
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: '32px',
+          padding: '24px',
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #f0f0f0'
+        }}>
           <Pagination
             current={page}
             pageSize={pageSize}
@@ -382,6 +514,7 @@ const PostList = ({ posts = [], total = 0, page = 1, pageSize = 10, onPageChange
             onChange={onPageChange}
             showSizeChanger
             pageSizeOptions={['10', '20', '50']}
+            style={{ margin: 0 }}
           />
         </div>
       )}

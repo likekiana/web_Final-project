@@ -82,7 +82,9 @@ export const authAPI = {
   // 注册
   register: (data) => api.post('/auth/register/', data),
   // 获取当前用户信息
-  getCurrentUser: () => api.get('/auth/me/')
+  getCurrentUser: () => api.get('/auth/me/'),
+  // 修改密码
+  changePassword: (data) => api.post('/auth/me/', data)
 }
 
 // 帖子相关API
@@ -171,6 +173,7 @@ export const adminAPI = {
   
   // 内容管理
   getPosts: (params) => api.get('/admin/posts/', { params }),
+  updatePost: (id, data) => api.put(`/admin/posts/${id}/`, data),
   deletePost: (id) => api.delete(`/admin/posts/${id}/`),
   pinPost: (id) => api.put(`/admin/posts/${id}/pin/`),
   unpinPost: (id) => api.put(`/admin/posts/${id}/unpin/`),
@@ -205,19 +208,7 @@ export const favoriteAPI = {
   checkFavorite: (postId) => api.get(`/favorites/check/${postId}/`),
 }
 
-// 通知相关API
-export const notificationAPI = {
-  // 获取通知列表
-  getNotifications: (params) => api.get('/notifications/', { params }),
-  // 获取通知详情
-  getNotificationDetail: (id) => api.get(`/notifications/${id}/`),
-  // 标记通知为已读
-  markAsRead: (id) => api.patch(`/notifications/${id}/`),
-  // 标记所有通知为已读
-  markAllAsRead: () => api.patch('/notifications/mark-all-read/'),
-  // 获取未读通知数量
-  getUnreadCount: () => api.get('/notifications/count/'),
-}
+
 
 // 私信相关API
 export const messageAPI = {
@@ -226,9 +217,28 @@ export const messageAPI = {
   // 获取私信详情
   getMessageDetail: (id) => api.get(`/messages/${id}/`),
   // 发送私信
-  sendMessage: (data) => api.post('/messages/', data),
+  sendMessage: (data) => {
+    // 如果包含文件，使用FormData
+    const isFormData = data.image || data.video;
+    if (isFormData) {
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        if (data[key]) {
+          formData.append(key, data[key]);
+        }
+      });
+      return api.post('/messages/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    }
+    return api.post('/messages/', data);
+  },
   // 标记私信为已读
   markMessageAsRead: (id) => api.patch(`/messages/${id}/`),
+  // 删除私信
+  deleteMessage: (id) => api.delete(`/messages/${id}/`),
   // 标记所有私信为已读
   markAllMessagesAsRead: () => api.patch('/messages/mark-all-read/'),
   // 获取未读私信数量
@@ -275,6 +285,40 @@ export const aiAPI = {
   expandContent: (data) => api.post('/ai/expand-content/', data),
   // 增强搜索
   enhancedSearch: (params) => api.get('/ai/enhanced-search/', { params })
+}
+
+// 反馈相关API
+export const feedbackAPI = {
+  // 创建反馈
+  createFeedback: (data) => api.post('/feedback/feedbacks/', data),
+  // 获取用户反馈列表
+  getUserFeedbacks: () => api.get('/feedback/feedbacks/user/'),
+  // 获取反馈详情
+  getFeedbackDetail: (id) => api.get(`/feedback/feedbacks/${id}/`),
+  // 获取反馈列表（管理员）
+  getFeedbacks: (params) => api.get('/feedback/admin/feedbacks/', { params }),
+  // 处理反馈（管理员）
+  processFeedback: (id, data) => api.put(`/feedback/admin/feedbacks/${id}/process/`, data)
+}
+
+// 积分相关API
+export const pointsAPI = {
+  // 获取当前用户积分信息
+  getPointsInfo: () => api.get('/points/info/'),
+  // 获取当前用户积分记录
+  getPointsRecords: (params) => api.get('/points/records/', { params }),
+  // 根据事件奖励积分
+  awardPoints: (data) => api.post('/points/award/', data),
+  // 积分排行榜
+  getPointsRank: () => api.get('/points/rank/'),
+  // 管理员获取指定用户积分信息
+  getAdminPointsInfo: (userId) => api.get(`/admin/points/users/${userId}/info/`),
+  // 管理员获取所有用户积分记录
+  getAdminPointsRecords: (params) => api.get('/admin/points/records/all/', { params }),
+  // 管理员批量更新用户积分
+  batchUpdatePoints: (data) => api.post('/admin/points/batch/update/', data),
+  // 管理员获取积分规则列表
+  getPointsRules: () => api.get('/admin/points/rules/')
 }
 
 export default api

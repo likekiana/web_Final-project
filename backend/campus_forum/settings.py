@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'likes',
     'reports',
     'ads',
-    'notifications',
+
     'user_messages',
     'tags',
     'favorites',
@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'browsing_history',
     'ai_audit',
     'ai_assistant',
+    'feedback',
+    'points',
 ]
 
 # 中间件配置

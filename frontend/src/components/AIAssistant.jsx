@@ -118,7 +118,10 @@ const AIAssistant = () => {
         />
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}>
-            <Spin indicator={<LoadingOutlined spin />} tip="AI思考中..." />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <Spin indicator={<LoadingOutlined spin />} />
+              <span style={{ marginLeft: '10px' }}>AI思考中...</span>
+            </div>
           </div>
         )}
         <div ref={messagesEndRef} />

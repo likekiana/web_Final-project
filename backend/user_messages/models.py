@@ -40,7 +40,9 @@ class Message(models.Model):
     )
     content = models.TextField(
         _('消息内容'),
-        max_length=2000
+        max_length=2000,
+        blank=True,
+        null=True
     )
     status = models.CharField(
         _('消息状态'),
@@ -48,6 +50,22 @@ class Message(models.Model):
         choices=Status.choices,
         default=Status.UNREAD,
         db_index=True
+    )
+    
+    # 媒体文件
+    image = models.ImageField(
+        _('图片'),
+        upload_to='messages/images/',
+        blank=True,
+        null=True,
+        max_length=255
+    )
+    video = models.FileField(
+        _('视频'),
+        upload_to='messages/videos/',
+        blank=True,
+        null=True,
+        max_length=255
     )
     
     # 消息类型

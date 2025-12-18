@@ -24,13 +24,21 @@ class UserSerializer(serializers.ModelSerializer):
     createdAt = serializers.DateTimeField(source='created_at', read_only=True)
     updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
     
+    # 隐私设置字段
+    showProfile = serializers.BooleanField(source='show_profile')
+    allowMessages = serializers.BooleanField(source='allow_messages')
+    allowFollow = serializers.BooleanField(source='allow_follow')
+    showPosts = serializers.BooleanField(source='show_posts')
+    saveHistory = serializers.BooleanField(source='save_history')
+    
     class Meta:
         model = User
         fields = (
             'id', 'username', 'email', 'password', 'avatar', 'bio',
             'role', 'status', 'reputation', 'postCount', 'commentCount',
             'is_active', 'is_staff', 'is_superuser',
-            'createdAt', 'updatedAt'
+            'createdAt', 'updatedAt',
+            'showProfile', 'allowMessages', 'allowFollow', 'showPosts', 'saveHistory'
         )
     
     def validate_password(self, value):
@@ -78,6 +86,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
     commentCount = serializers.IntegerField(source='comment_count', read_only=True)
     createdAt = serializers.DateTimeField(source='created_at', read_only=True)
     
+    # 隐私设置字段
+    showProfile = serializers.BooleanField(source='show_profile')
+    allowMessages = serializers.BooleanField(source='allow_messages')
+    allowFollow = serializers.BooleanField(source='allow_follow')
+    showPosts = serializers.BooleanField(source='show_posts')
+    saveHistory = serializers.BooleanField(source='save_history')
+    
     def get_avatar(self, obj):
         """获取avatar的完整URL"""
         if obj.avatar and hasattr(obj.avatar, 'url'):
@@ -98,7 +113,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'email', 'avatar', 'avatar_file', 'bio',
             'role', 'reputation', 'postCount', 'commentCount',
-            'createdAt'
+            'createdAt',
+            'showProfile', 'allowMessages', 'allowFollow', 'showPosts', 'saveHistory'
         )
         read_only_fields = ('email', 'role', 'reputation', 'postCount', 'commentCount', 'createdAt')
 

@@ -61,22 +61,4 @@ class Like(models.Model):
             return Comment.objects.filter(id=self.target_id).first()
         return None
     
-    def save(self, *args, **kwargs):
-        """保存前的处理"""
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        
-        # 增加目标的点赞数
-        if is_new:
-            target = self.get_target()
-            if target:
-                target.increment_likes_count()
-    
-    def delete(self, *args, **kwargs):
-        """删除前的处理"""
-        # 减少目标的点赞数
-        target = self.get_target()
-        if target:
-            target.decrement_likes_count()
-        
-        super().delete(*args, **kwargs)
+

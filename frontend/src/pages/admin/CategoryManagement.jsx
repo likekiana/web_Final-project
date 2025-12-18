@@ -56,6 +56,7 @@ const CategoryManagement = () => {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
+      width: 150,
       render: (text, record) => (
         <Space>
           <div style={{ 
@@ -79,20 +80,17 @@ const CategoryManagement = () => {
         expandable: true
       }
     },
-    {
-      title: '帖子数量',
-      dataIndex: 'post_count',
-      key: 'post_count',
-      render: (text) => <Tag color="blue">{text}</Tag>
-    },
+    
     {
       title: '排序',
       dataIndex: 'order',
-      key: 'order'
+      key: 'order',
+      width: 80
     },
     {
       title: '操作',
       key: 'action',
+      width: 150,
       render: (_, record) => (
         <Space size="middle">
           <Button type="primary" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)}>
@@ -212,6 +210,8 @@ const CategoryManagement = () => {
           rowKey="id"
           loading={categoriesLoading}
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 'max-content' }}
+          style={{ minWidth: '800px' }}
         />
       </Card>
 

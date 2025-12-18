@@ -12,7 +12,6 @@ class CategorySerializer(serializers.ModelSerializer):
     """板块序列化器"""
     
     # 只读字段
-    post_count = serializers.IntegerField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
     
@@ -20,7 +19,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = (
             'id', 'name', 'description', 'icon', 'color',
-            'post_count', 'order', 'created_at', 'updated_at'
+            'order', 'created_at', 'updated_at'
         )
     
     def validate_name(self, value):
@@ -103,6 +102,26 @@ class PostSerializer(serializers.ModelSerializer):
         # 调用父类的验证方法
         validated_attrs = super().validate(attrs)
         return validated_attrs
+    
+    def to_representation(self, instance):
+        """自定义序列化输出，处理匿名帖子"""
+        data = super().to_representation(instance)
+        
+        # 如果是匿名帖子，隐藏真实用户信息
+        if instance.type == 'anonymous':
+            data['user'] = {
+                'id': 0,
+                'username': '匿名用户',
+                'avatar': None,
+                'bio': '',
+                'role': 'student',
+                'reputation': 0,
+                'postCount': 0,
+                'commentCount': 0,
+                'createdAt': data['created_at']
+            }
+        
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -155,7 +174,7 @@ class CategoryListSerializer(CategorySerializer):
     class Meta(CategorySerializer.Meta):
         fields = (
             'id', 'name', 'description', 'icon', 'color',
-            'post_count', 'order'
+            'order'
         )
 
 
@@ -164,7 +183,7 @@ class PostListSerializer(PostSerializer):
     
     class Meta(PostSerializer.Meta):
         fields = (
-            'id', 'title', 'content', 'media_files', 'type', 'user', 'category', 'category_id',
+            'id', 'title', 'content', 'media_files', 'type', 'status', 'user', 'category', 'category_id',
             'likes_count', 'comments_count', 'views_count',
             'is_liked', 'is_sticky', 'is_essential',
             'created_at'

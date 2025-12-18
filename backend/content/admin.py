@@ -11,7 +11,7 @@ from .models import Category, Post, Comment
 class CategoryAdmin(admin.ModelAdmin):
     """板块后台管理配置"""
     
-    list_display = ('id', 'name', 'description', 'post_count', 'order', 'created_at')
+    list_display = ('id', 'name', 'description', 'order', 'created_at')
     search_fields = ('name', 'description')
     list_filter = ('created_at',)
     list_per_page = 20
@@ -20,8 +20,8 @@ class CategoryAdmin(admin.ModelAdmin):
         (_('基本信息'), {
             'fields': ('name', 'description', 'icon', 'color')
         }),
-        (_('排序与统计'), {
-            'fields': ('order', 'post_count')
+        (_('排序'), {
+            'fields': ('order',)
         }),
         (_('时间信息'), {
             'fields': ('created_at', 'updated_at')

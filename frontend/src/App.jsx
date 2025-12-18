@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { Layout, Menu, Button, Space, Spin } from 'antd'
+import { Layout, Menu, Button, Space, Spin, ConfigProvider, Switch } from 'antd'
 import {
   BookOutlined, HomeOutlined, ShoppingCartOutlined, TeamOutlined,
   HeartOutlined, LoginOutlined, UserAddOutlined, HomeTwoTone,
-  BellOutlined, MessageOutlined, FileTextOutlined, UserOutlined, LogoutOutlined
+  BellOutlined, MessageOutlined, FileTextOutlined, UserOutlined, LogoutOutlined,
+  MoonOutlined, SunOutlined
 } from '@ant-design/icons'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { categoryAPI } from './services/api'
+// 导入AuthProvider
+import { AuthProvider } from './contexts/AuthContext'
 
 // 导入页面组件
 import Home from './pages/Home'
@@ -17,10 +20,16 @@ import PostDetailPage from './pages/PostDetailPage'
 import AdminDashboard from './pages/AdminDashboard'
 import Profile from './pages/Profile'
 import EditPost from './pages/EditPost'
-import Notifications from './pages/Notifications'
+
 import Messages from './pages/Messages'
+import MessageDetailPage from './pages/MessageDetailPage'
+import Feedback from './pages/Feedback'
+import Settings from './pages/Settings'
 
 const { Header, Content, Footer } = Layout
+
+// 主题上下文
+const ThemeContext = React.createContext()
 
 // 导航栏组件
 const AppHeader = () => {
@@ -28,6 +37,7 @@ const AppHeader = () => {
   const navigate = useNavigate()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
+  const { theme, toggleTheme } = React.useContext(ThemeContext)
 
   // 图标映射
   const iconMap = {
@@ -91,16 +101,28 @@ const AppHeader = () => {
             className="app-menu"
           />
           <Space>
+            {/* 主题切换开关 */}
+            <Space style={{ marginRight: 16, display: 'flex', alignItems: 'center', color: '#fff' }}>
+              <SunOutlined style={{ marginRight: 4 }} />
+              <Switch 
+                checked={theme === 'dark'} 
+                onChange={toggleTheme} 
+                checkedChildren={<MoonOutlined />} 
+                unCheckedChildren={<SunOutlined />} 
+              />
+              <MoonOutlined style={{ marginLeft: 4 }} />
+            </Space>
+            
             {isLoggedIn ? (
               <>
-                <Button type="link" icon={<BellOutlined />} onClick={() => navigate('/notifications')} style={{ color: '#fff' }}>
-                  通知
-                </Button>
                 <Button type="link" icon={<MessageOutlined />} onClick={() => navigate('/messages')} style={{ color: '#fff' }}>
                   私信
                 </Button>
                 <Button type="link" icon={<UserOutlined />} onClick={() => navigate('/profile')} style={{ color: '#fff' }}>
                   个人中心
+                </Button>
+                <Button type="link" icon={<FileTextOutlined />} onClick={() => navigate('/settings')} style={{ color: '#fff' }}>
+                  设置中心
                 </Button>
                 {/* 管理员入口 - 只有管理员才能看到 */}
                 {localStorage.getItem('userRole') && ['admin', 'superAdmin'].includes(localStorage.getItem('userRole')) && (
@@ -139,39 +161,68 @@ const AppHeader = () => {
 }
 
 function App() {
+  // 主题状态管理
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
+  
+  // 切换主题
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+  }
+  
+  // 应用主题到body
+  useEffect(() => {
+    document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme'
+  }, [theme])
+  
+  // 主题配置
+  const themeConfig = {
+    algorithm: theme === 'dark' ? ConfigProvider.darkAlgorithm : ConfigProvider.defaultAlgorithm,
+  }
+  
   return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <Layout className="app-layout">
-        <AppHeader />
-        <Content className="app-content">
-          <div className="app-container">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/posts/create" element={<CreatePost />} />
-              <Route path="/posts/:id" element={<PostDetailPage />} />
-              <Route path="/posts/:id/edit" element={<EditPost />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/admin/*">
-                <Route index element={<AdminDashboard />} />
-                <Route path="*" element={<AdminDashboard />} />
-              </Route>
-            </Routes>
-          </div>
-        </Content>
-        <Footer className="app-footer">
-          校园信息聚合论坛系统（校园通）©{new Date().getFullYear()}
-        </Footer>
-      </Layout>
-    </Router>
+    <ConfigProvider theme={themeConfig}>
+      <AuthProvider>
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <Layout className="app-layout">
+              <AppHeader />
+              <Content className="app-content">
+                <div className="app-container">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/posts/create" element={<CreatePost />} />
+                    <Route path="/posts/:id" element={<PostDetailPage />} />
+                    <Route path="/posts/:id/edit" element={<EditPost />} />
+                    <Route path="/profile" element={<Profile />} />
+
+                    <Route path="/messages" element={<Messages />} />
+                    <Route path="/messages/:userId" element={<MessageDetailPage />} />
+                    <Route path="/feedback" element={<Feedback />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/admin/*">
+                      <Route index element={<AdminDashboard />} />
+                      <Route path="*" element={<AdminDashboard />} />
+                    </Route>
+                  </Routes>
+                </div>
+              </Content>
+              <Footer className="app-footer">
+                校园信息聚合论坛系统（校园通）©{new Date().getFullYear()}
+              </Footer>
+            </Layout>
+          </Router>
+        </ThemeContext.Provider>
+      </AuthProvider>
+    </ConfigProvider>
   )
 }
 

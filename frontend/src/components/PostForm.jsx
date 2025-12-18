@@ -5,29 +5,8 @@ import { UploadOutlined, FileImageOutlined, BulbOutlined, EditOutlined, AlignLef
 // 导入API服务
 import { categoryAPI, postAPI, aiAPI } from '../services/api'
 
-// 创建axios实例，用于文件上传
-import axios from 'axios'
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'multipart/form-data'
-  }
-})
-
-// 请求拦截器，添加token
-api.interceptors.request.use(
-  config => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  error => {
-    return Promise.reject(error)
-  }
-)
+// 从api.js导入已配置好的axios实例
+import api from '../services/api'
 
 const { Title } = Typography
 const { TextArea } = Input
@@ -42,6 +21,7 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
   const [categories, setCategories] = useState([])
   // 媒体文件状态管理
   const [mediaFiles, setMediaFiles] = useState([])
+  const [previewFile, setPreviewFile] = useState(null)
 
   // 从API获取板块数据
   useEffect(() => {
@@ -187,12 +167,12 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
           
           try {
             const response = await api.post('/posts/upload', formData)
-            if (response.data?.success && response.data?.data?.url) {
-              mediaUrls.push(response.data.data.url)
+            if (response?.success && response?.data?.url) {
+              mediaUrls.push(response.data.url)
               // 更新文件状态为已上传
               setMediaFiles(mediaFiles.map(item => {
                 if (item.uid === mediaFile.uid) {
-                  return { ...item, status: 'done', response: response.data }
+                  return { ...item, status: 'done', response: response }
                 }
                 return item
               }))
@@ -353,13 +333,14 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
               }
               // 生成预览URL
               const previewUrl = URL.createObjectURL(file)
-              // 添加到媒体文件列表
+              // 添加到媒体文件列表，包含文件类型
               setMediaFiles([...mediaFiles, { 
                 uid: Date.now(), 
                 name: file.name, 
                 status: 'ready', 
                 url: previewUrl,
-                file: file // 保存原始文件对象
+                file: file, // 保存原始文件对象
+                type: file.type // 保存文件MIME类型
               }])
               // 阻止自动上传
               return false
@@ -370,6 +351,7 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
               return true
             }}
             onPreview={(file) => {
+              setPreviewFile(file)
               setPreviewImage(file.url)
               setPreviewVisible(true)
             }}
@@ -382,7 +364,7 @@ const PostForm = ({ onSubmit, initialValues = {}, title = '发布新帖', submit
           </Upload>
           {previewVisible && (
             <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, background: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-              {previewImage.endsWith('.mp4') || previewImage.endsWith('.mov') || previewImage.endsWith('.avi') || previewImage.endsWith('.quicktime') ? (
+              {previewFile?.type?.startsWith('video/') ? (
                 <video src={previewImage} controls style={{ maxWidth: '90%', maxHeight: '90%' }} />
               ) : (
                 <img src={previewImage} alt="预览" style={{ maxWidth: '90%', maxHeight: '90%' }} />

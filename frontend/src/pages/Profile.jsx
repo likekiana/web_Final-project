@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input, Upload, Tabs, Empty } from 'antd'
+import { Card, Typography, Row, Col, Button, List, Avatar, Space, Spin, message, Form, Input, Upload, Tabs, Empty, Modal } from 'antd'
 import { EditOutlined, LogoutOutlined, BookOutlined, UserOutlined, CommentOutlined, SaveOutlined, CloseOutlined, UploadOutlined, EyeOutlined, DeleteOutlined, StarOutlined } from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
-import { authAPI, userAPI, historyAPI, favoriteAPI, followAPI } from '../services/api'
+import { authAPI, userAPI, historyAPI, favoriteAPI, followAPI, postAPI } from '../services/api'
 
 const { Title, Paragraph, Text } = Typography
 
@@ -25,6 +25,8 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('posts')
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const [postToDelete, setPostToDelete] = useState(null)
 
   // 获取当前用户信息
   useEffect(() => {
@@ -236,6 +238,39 @@ const Profile = () => {
     }
   }, [activeTab])
 
+  // 打开删除确认对话框
+  const handleDeletePost = (post) => {
+    setPostToDelete(post)
+    setDeleteModalVisible(true)
+  }
+
+  // 关闭删除确认对话框
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false)
+    setPostToDelete(null)
+  }
+
+  // 执行删除帖子操作
+  const handleConfirmDeletePost = async () => {
+    if (!postToDelete) return
+    
+    try {
+      const response = await postAPI.deletePost(postToDelete.id)
+      if (response.success) {
+        message.success('帖子删除成功')
+        // 更新帖子列表
+        setPosts(posts.filter(post => post.id !== postToDelete.id))
+        // 关闭对话框
+        handleCancelDelete()
+      } else {
+        message.error(response.message || '帖子删除失败')
+      }
+    } catch (error) {
+      console.error('Failed to delete post:', error)
+      message.error('帖子删除失败')
+    }
+  }
+
 
 
   const handleLogout = () => {
@@ -445,20 +480,29 @@ const Profile = () => {
                         dataSource={posts}
                         renderItem={(post) => (
                           <List.Item
-                            actions={[
-                              <Space size="middle">
-                                <Text type="secondary">
-                                  <BookOutlined style={{ marginRight: 4 }} />
-                                  {post.likes_count || 0} 点赞
-                                </Text>
-                                <Text type="secondary">
-                                  <CommentOutlined style={{ marginRight: 4 }} />
-                                  {post.comment_count || 0} 评论
-                                </Text>
-                              </Space>
-                            ]}
-                            style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
-                          >
+                              actions={[
+                                <Space size="middle">
+                                  <Text type="secondary">
+                                    <BookOutlined style={{ marginRight: 4 }} />
+                                    {post.likes_count || 0} 点赞
+                                  </Text>
+                                  <Text type="secondary">
+                                    <CommentOutlined style={{ marginRight: 4 }} />
+                                    {post.comment_count || 0} 评论
+                                  </Text>
+                                  <Button
+                                    type="link"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    size="small"
+                                    onClick={() => handleDeletePost(post)}
+                                  >
+                                    删除
+                                  </Button>
+                                </Space>
+                              ]}
+                              style={{ marginBottom: 16, padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
+                            >
                             <List.Item.Meta
                               title={
                                 <Link to={`/posts/${post.id}`}>{post.title}</Link>
@@ -785,6 +829,19 @@ const Profile = () => {
           />
         </Col>
       </Row>
+
+      {/* 删除帖子确认对话框 */}
+      <Modal
+        title="删除帖子"
+        open={deleteModalVisible}
+        onOk={handleConfirmDeletePost}
+        onCancel={handleCancelDelete}
+        okText="确认删除"
+        cancelText="取消"
+        okType="danger"
+      >
+        <p>确定要删除帖子 "{postToDelete?.title || ''}" 吗？删除后将无法恢复。</p>
+      </Modal>
     </div>
   )
 }

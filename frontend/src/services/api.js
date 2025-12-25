@@ -4,7 +4,7 @@ import axios from 'axios'
 // 创建axios实例
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api', // 使用Vite环境变量配置API地址
-  timeout: 10000, // 请求超时时间
+  timeout: 30000, // 请求超时时间，AI生成内容可能需要较长时间
   headers: {
     'Content-Type': 'application/json'
   }

@@ -884,6 +884,323 @@
 }
 ```
 
+### 2.9 收藏相关API
+
+#### 2.9.1 获取用户收藏列表
+- **URL**: `/api/favorites/`
+- **方法**: `GET`
+- **描述**: 获取当前用户的收藏列表
+- **权限**: 登录用户
+- **查询参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | page | number | 否 | 页码（默认1） |
+  | limit | number | 否 | 每页数量（默认10） |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "测试帖子",
+        "category_id": 1,
+        "category_name": "学习学术区",
+        "likes_count": 5,
+        "comments_count": 2,
+        "is_liked": false,
+        "is_favorited": true,
+        "created_at": "2023-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "total_pages": 3,
+      "total_items": 25,
+      "page_size": 10
+    }
+  }
+}
+```
+
+#### 2.9.2 收藏/取消收藏帖子
+- **URL**: `/api/favorites/`
+- **方法**: `POST`
+- **描述**: 收藏或取消收藏帖子
+- **权限**: 登录用户
+- **请求参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | post_id | number | 是 | 帖子ID |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "收藏成功",
+  "data": {
+    "is_favorited": true
+  }
+}
+```
+
+### 2.10 关注相关API
+
+#### 2.10.1 获取关注列表
+- **URL**: `/api/follows/following/`
+- **方法**: `GET`
+- **描述**: 获取当前用户的关注列表
+- **权限**: 登录用户
+- **查询参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | page | number | 否 | 页码（默认1） |
+  | limit | number | 否 | 每页数量（默认10） |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "following": [
+      {
+        "id": 2,
+        "username": "user2",
+        "avatar": null,
+        "followed_at": "2023-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "total_pages": 2,
+      "total_items": 15,
+      "page_size": 10
+    }
+  }
+}
+```
+
+#### 2.10.2 获取粉丝列表
+- **URL**: `/api/follows/followers/`
+- **方法**: `GET`
+- **描述**: 获取当前用户的粉丝列表
+- **权限**: 登录用户
+- **查询参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | page | number | 否 | 页码（默认1） |
+  | limit | number | 否 | 每页数量（默认10） |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "followers": [
+      {
+        "id": 3,
+        "username": "user3",
+        "avatar": null,
+        "followed_at": "2023-01-02T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "total_pages": 2,
+      "total_items": 12,
+      "page_size": 10
+    }
+  }
+}
+```
+
+#### 2.10.3 关注/取消关注用户
+- **URL**: `/api/follows/`
+- **方法**: `POST`
+- **描述**: 关注或取消关注用户
+- **权限**: 登录用户
+- **请求参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | following_id | number | 是 | 被关注用户ID |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "关注成功",
+  "data": {
+    "is_following": true
+  }
+}
+```
+
+### 2.11 浏览历史相关API
+
+#### 2.11.1 获取浏览历史
+- **URL**: `/api/history/`
+- **方法**: `GET`
+- **描述**: 获取当前用户的浏览历史
+- **权限**: 登录用户
+- **查询参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | page | number | 否 | 页码（默认1） |
+  | limit | number | 否 | 每页数量（默认10） |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "测试帖子",
+        "category_id": 1,
+        "category_name": "学习学术区",
+        "likes_count": 5,
+        "comments_count": 2,
+        "is_liked": false,
+        "is_favorited": false,
+        "viewed_at": "2023-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "total_pages": 5,
+      "total_items": 45,
+      "page_size": 10
+    }
+  }
+}
+```
+
+#### 2.11.2 清除浏览历史
+- **URL**: `/api/history/`
+- **方法**: `DELETE`
+- **描述**: 清除当前用户的浏览历史
+- **权限**: 登录用户
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "浏览历史已清除"
+}
+```
+
+### 2.12 AI助手相关API
+
+#### 2.12.1 获取AI助手回复
+- **URL**: `/api/ai/chat/`
+- **方法**: `POST`
+- **描述**: 获取AI助手的回复
+- **权限**: 登录用户
+- **请求参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | message | string | 是 | 用户输入的消息 |
+  | context | array | 否 | 对话历史上下文 |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "reply": "这是AI助手的回复内容",
+    "context": [
+      {"role": "user", "content": "你好"},
+      {"role": "assistant", "content": "你好，有什么可以帮助你的吗？"}
+    ]
+  }
+}
+```
+
+### 2.13 反馈相关API
+
+#### 2.13.1 提交反馈
+- **URL**: `/api/feedback/`
+- **方法**: `POST`
+- **描述**: 提交用户反馈
+- **权限**: 登录用户
+- **请求参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | type | string | 是 | 反馈类型（bug/suggestion/other） |
+  | content | string | 是 | 反馈内容 |
+  | contact | string | 否 | 联系方式 |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "反馈提交成功，感谢您的支持"
+}
+```
+
+### 2.14 积分系统相关API
+
+#### 2.14.1 获取用户积分信息
+- **URL**: `/api/points/`
+- **方法**: `GET`
+- **描述**: 获取当前用户的积分信息
+- **权限**: 登录用户
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "points": 100,
+    "level": "Lv1",
+    "rank": 123
+  }
+}
+```
+
+#### 2.14.2 获取积分记录
+- **URL**: `/api/points/records/`
+- **方法**: `GET`
+- **描述**: 获取当前用户的积分记录
+- **权限**: 登录用户
+- **查询参数**:
+  | 参数名 | 类型 | 必需 | 描述 |
+  | --- | --- | --- | --- |
+  | page | number | 否 | 页码（默认1） |
+  | limit | number | 否 | 每页数量（默认10） |
+
+- **响应示例**:
+```json
+{
+  "success": true,
+  "message": "获取成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "type": "earn",
+        "points": 10,
+        "reason": "发布帖子",
+        "created_at": "2023-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "total_pages": 2,
+      "total_items": 15,
+      "page_size": 10
+    }
+  }
+}
+```
+
 ## 3. API版本控制
 
 - 当前版本：v1

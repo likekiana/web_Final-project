@@ -14,7 +14,7 @@ class Command(BaseCommand):
             # 超级管理员
             {
                 'username': 'superadmin',
-                'email': 'superadmin@example.com',
+                'email': 'superadmin@test.edu.cn',
                 'password': '123456',
                 'role': 'superAdmin',
                 'bio': '超级管理员账号'
@@ -22,7 +22,7 @@ class Command(BaseCommand):
             # 管理员
             {
                 'username': 'admin',
-                'email': 'admin@example.com',
+                'email': 'admin@test.edu.cn',
                 'password': '123456',
                 'role': 'admin',
                 'bio': '管理员账号'
@@ -30,7 +30,7 @@ class Command(BaseCommand):
             # 版主
             {
                 'username': 'moderator',
-                'email': 'moderator@example.com',
+                'email': 'moderator@test.edu.cn',
                 'password': '123456',
                 'role': 'moderator',
                 'bio': '版主账号'
@@ -38,14 +38,14 @@ class Command(BaseCommand):
             # 普通学生用户
             {
                 'username': 'student1',
-                'email': 'student1@example.com',
+                'email': 'student1@test.edu.cn',
                 'password': '123456',
                 'role': 'student',
                 'bio': '普通学生用户1'
             },
             {
                 'username': 'student2',
-                'email': 'student2@example.com',
+                'email': 'student2@test.edu.cn',
                 'password': '123456',
                 'role': 'student',
                 'bio': '普通学生用户2'
@@ -53,7 +53,7 @@ class Command(BaseCommand):
             # 商户用户
             {
                 'username': 'merchant',
-                'email': 'merchant@example.com',
+                'email': 'merchant@test.edu.cn',
                 'password': '123456',
                 'role': 'merchant',
                 'bio': '商户用户账号'

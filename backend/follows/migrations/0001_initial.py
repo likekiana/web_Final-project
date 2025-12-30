@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': '关注',
                 'ordering': ['-created_at'],
                 'indexes': [models.Index(fields=['follower', '-created_at'], name='follows_fol_followe_3118ce_idx'), models.Index(fields=['following', '-created_at'], name='follows_fol_followi_47011c_idx')],
-                'constraints': [models.CheckConstraint(check=models.Q(('follower', models.F('following')), _negated=True), name='not_follow_self_constraint')],
+                'constraints': [models.CheckConstraint(condition=models.Q(('follower', models.F('following')), _negated=True), name='not_follow_self_constraint')],
                 'unique_together': {('follower', 'following')},
             },
         ),

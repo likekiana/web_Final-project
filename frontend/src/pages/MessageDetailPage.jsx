@@ -67,22 +67,25 @@ const MessageDetailPage = () => {
       // 准备发送数据
       const messageData = {
         ...values,
-        recipient_id: userId
+        recipient_id: numericUserId // 使用数字类型的用户ID
       }
       
       const response = await messageAPI.sendMessage(messageData)
-      if (response.success) {
-        // 重新获取对话消息
-        fetchConversationMessages(userId)
-        // 重置表单
-        form.resetFields()
-        // 重置预览
-        setPreviewImage('')
-        setPreviewVideo('')
-        // 重置文件列表
-        setImageFileList([])
-        setVideoFileList([])
-      }
+      
+      // 添加调试日志，查看服务器返回的完整响应
+      console.log('Message send response:', response)
+      
+      // 无论response.success是否存在，都重新获取对话消息
+      // 因为服务器可能直接返回消息数据而不是包含success字段的对象
+      fetchConversationMessages(userId)
+      // 重置表单
+      form.resetFields()
+      // 重置预览
+      setPreviewImage('')
+      setPreviewVideo('')
+      // 重置文件列表
+      setImageFileList([])
+      setVideoFileList([])
     } catch (error) {
       console.error('Failed to send message:', error)
     }

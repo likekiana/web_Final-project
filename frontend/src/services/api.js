@@ -223,23 +223,40 @@ export const messageAPI = {
   // 获取私信详情
   getMessageDetail: (id) => api.get(`/messages/${id}/`),
   // 发送私信
-  sendMessage: (data) => {
-    // 如果包含文件，使用FormData
-    const isFormData = data.image || data.video;
-    if (isFormData) {
-      const formData = new FormData();
-      Object.keys(data).forEach(key => {
-        if (data[key]) {
-          formData.append(key, data[key]);
-        }
-      });
-      return api.post('/messages/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-    }
-    return api.post('/messages/', data);
+  sendMessage: async (data) => {
+    // 日志查看完整数据
+    console.log('Sending message data:', data);
+    
+    // 获取完整的API URL
+    const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/messages/`;
+    // 获取token
+    const token = localStorage.getItem('token');
+    
+    // 无论是否包含文件，都使用FormData格式
+    // 因为服务器只接受multipart/form-data格式的私信请求
+    const formData = new FormData();
+    
+    // 添加文本字段
+    if (data.content) formData.append('content', data.content);
+    if (data.recipient_id) formData.append('recipient_id', data.recipient_id);
+    
+    // 添加文件字段（只有当是File对象时）
+    if (data.image instanceof File) formData.append('image', data.image);
+    if (data.video instanceof File) formData.append('video', data.video);
+    
+    console.log('Using FormData for all message types');
+    
+    // 使用fetch API发送请求
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : ''
+        // 不设置Content-Type，让浏览器自动设置正确的multipart/form-data和boundary
+      },
+      body: formData
+    });
+    
+    return response.json();
   },
   // 标记私信为已读
   markMessageAsRead: (id) => api.patch(`/messages/${id}/`),
